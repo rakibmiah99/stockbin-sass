@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  Package,
   Boxes,
   ShoppingCart,
   BarChart3,
@@ -11,6 +12,7 @@ import {
   Contact,
   CreditCard,
   Tags,
+  Palette,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -26,6 +28,9 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/products", label: "Products", icon: Package },
+  { href: "/dashboard/products/categories", label: "Product Categories", icon: Tags },
+  { href: "/dashboard/products/variants", label: "Manage Variants", icon: Palette },
   { href: "/dashboard/inventory", label: "Inventory", icon: Boxes },
   { href: "/dashboard/orders", label: "Orders", icon: ShoppingCart },
   { href: "/dashboard/customers", label: "Customers", icon: Contact },
