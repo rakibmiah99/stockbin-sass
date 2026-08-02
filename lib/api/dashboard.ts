@@ -1,5 +1,4 @@
 import { apiRequest } from "./client";
-import { getToken } from "@/lib/auth/session";
 
 export type DashboardPeriod = "today" | "last_7_days" | "last_30_days" | "last_60_days" | "last_90_days";
 
@@ -72,15 +71,18 @@ export interface DashboardList<T> {
 }
 
 export const dashboardApi = {
-  overview: (period: DashboardPeriod) =>
-    apiRequest<DashboardOverview>(`/dashboard?period=${period}`, { token: getToken() }),
+  overview: (period: DashboardPeriod, token: string) =>
+    apiRequest<DashboardOverview>(`/dashboard?period=${period}`, { token }),
 
-  lowStock: () => apiRequest<DashboardList<LowStockItem>>("/dashboard/low-stock", { token: getToken() }),
+  lowStock: (token: string) =>
+    apiRequest<DashboardList<LowStockItem>>("/dashboard/low-stock", { token }),
 
-  invoices: () => apiRequest<DashboardList<DashboardInvoice>>("/dashboard/invoices", { token: getToken() }),
+  invoices: (token: string) =>
+    apiRequest<DashboardList<DashboardInvoice>>("/dashboard/invoices", { token }),
 
-  dueCustomers: () =>
-    apiRequest<DashboardList<DueCustomer>>("/dashboard/due-customers", { token: getToken() }),
+  dueCustomers: (token: string) =>
+    apiRequest<DashboardList<DueCustomer>>("/dashboard/due-customers", { token }),
 
-  expenses: () => apiRequest<DashboardList<DashboardExpense>>("/dashboard/expenses", { token: getToken() }),
+  expenses: (token: string) =>
+    apiRequest<DashboardList<DashboardExpense>>("/dashboard/expenses", { token }),
 };

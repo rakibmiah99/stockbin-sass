@@ -2,19 +2,29 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Boxes, ShoppingCart, BarChart3, Settings } from "lucide-react";
+import { LayoutDashboard, Boxes, ShoppingCart, BarChart3, Users, Settings, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { UserRole } from "@/lib/api/auth";
 
-const NAV_ITEMS = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  adminOnly?: boolean;
+}
+
+const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/inventory", label: "Inventory", icon: Boxes },
   { href: "/dashboard/orders", label: "Orders", icon: ShoppingCart },
   { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
-] as const;
+  { href: "/dashboard/users", label: "Users", icon: Users, adminOnly: true },
+  { href: "/dashboard/settings", label: "Shop Settings", icon: Settings },
+];
 
-export function Sidebar() {
+export function Sidebar({ role }: { role?: UserRole }) {
   const pathname = usePathname();
+  const items = NAV_ITEMS.filter((item) => !item.adminOnly || role === "admin");
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-surface md:flex">
@@ -26,8 +36,9 @@ export function Sidebar() {
       </div>
 
       <nav className="flex flex-1 flex-col gap-xs p-md">
-        {NAV_ITEMS.map((item) => {
-          const active = pathname === item.href;
+        {items.map((item) => {
+          const active =
+            item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href);
           const Icon = item.icon;
           return (
             <Link

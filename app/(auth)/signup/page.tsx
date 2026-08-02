@@ -1,48 +1,22 @@
-"use client";
-
-import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import type { Metadata } from "next";
 import Link from "next/link";
-import { useAuth } from "@/lib/auth/AuthProvider";
+import { registerAction } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { FormField } from "@/components/ui/FormField";
 import { FormError } from "@/components/ui/FormError";
 
-export default function SignupPage() {
-  const { register } = useAuth();
-  const router = useRouter();
+export const metadata: Metadata = {
+  title: "Create account",
+};
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    setError(null);
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      await register(name, email, password, confirmPassword);
-      router.push("/dashboard");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
-      setSubmitting(false);
-    }
-  }
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
 
   return (
     <div className="flex flex-col gap-xl">
@@ -51,20 +25,11 @@ export default function SignupPage() {
         <p className="text-body text-muted">Get started with Stockbin in a few seconds.</p>
       </div>
 
-      <form className="flex flex-col gap-lg" onSubmit={handleSubmit} noValidate>
-        <FormError message={error} />
+      <form className="flex flex-col gap-lg" action={registerAction}>
+        <FormError message={error ?? null} />
 
         <FormField id="name" label="Name">
-          <Input
-            id="name"
-            name="name"
-            type="text"
-            autoComplete="name"
-            required
-            placeholder="Jane Doe"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+          <Input id="name" name="name" type="text" autoComplete="name" required placeholder="Jane Doe" />
         </FormField>
 
         <FormField id="email" label="Email">
@@ -75,8 +40,6 @@ export default function SignupPage() {
             autoComplete="email"
             required
             placeholder="you@company.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
           />
         </FormField>
 
@@ -88,8 +51,6 @@ export default function SignupPage() {
             required
             minLength={8}
             placeholder="Create a password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
           />
         </FormField>
 
@@ -101,13 +62,11 @@ export default function SignupPage() {
             required
             minLength={8}
             placeholder="Re-enter your password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
           />
         </FormField>
 
-        <Button type="submit" fullWidth disabled={submitting}>
-          {submitting ? "Creating account…" : "Create account"}
+        <Button type="submit" fullWidth>
+          Create account
         </Button>
       </form>
 

@@ -1,9 +1,6 @@
-"use client";
-
-import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import type { Metadata } from "next";
 import Link from "next/link";
-import { useAuth } from "@/lib/auth/AuthProvider";
+import { loginAction } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
@@ -11,28 +8,16 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { FormField } from "@/components/ui/FormField";
 import { FormError } from "@/components/ui/FormError";
 
-export default function LoginPage() {
-  const { login } = useAuth();
-  const router = useRouter();
+export const metadata: Metadata = {
+  title: "Sign in",
+};
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    setError(null);
-    setSubmitting(true);
-    try {
-      await login(email, password, remember);
-      router.push("/dashboard");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
-      setSubmitting(false);
-    }
-  }
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
 
   return (
     <div className="flex flex-col gap-xl">
@@ -41,8 +26,8 @@ export default function LoginPage() {
         <p className="text-body text-muted">Welcome back — enter your details to continue.</p>
       </div>
 
-      <form className="flex flex-col gap-lg" onSubmit={handleSubmit} noValidate>
-        <FormError message={error} />
+      <form className="flex flex-col gap-lg" action={loginAction}>
+        <FormError message={error ?? null} />
 
         <FormField id="email" label="Email">
           <Input
@@ -52,8 +37,6 @@ export default function LoginPage() {
             autoComplete="email"
             required
             placeholder="you@company.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
           />
         </FormField>
 
@@ -64,26 +47,18 @@ export default function LoginPage() {
             autoComplete="current-password"
             required
             placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
           />
         </FormField>
 
         <div className="flex items-center justify-between">
-          <Checkbox
-            id="remember"
-            name="remember"
-            label="Remember me"
-            checked={remember}
-            onChange={(e) => setRemember(e.target.checked)}
-          />
+          <Checkbox id="remember" name="remember" label="Remember me" defaultChecked />
           <Link href="/forgot-password" className="text-small font-medium text-primary hover:opacity-80">
             Forgot password?
           </Link>
         </div>
 
-        <Button type="submit" fullWidth disabled={submitting}>
-          {submitting ? "Signing in…" : "Sign in"}
+        <Button type="submit" fullWidth>
+          Sign in
         </Button>
       </form>
 

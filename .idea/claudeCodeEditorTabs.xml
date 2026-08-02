@@ -1,20 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ClaudeCodeEditorTabs">
-    <option name="activeSessionId" value="962db537-8b93-4322-81a1-ffb550d43b5f" />
+    <option name="activeSessionId" value="764c08c4-3357-4c95-b7dc-6bbf0f8673f4" />
     <option name="openSessionIds">
       <list>
         <option value="962db537-8b93-4322-81a1-ffb550d43b5f" />
+        <option value="ce641495-3870-4d07-90ec-b369f58bab2a" />
+        <option value="ef4fc24e-c9d5-408e-b5ce-ab5234d51f5e" />
+        <option value="764c08c4-3357-4c95-b7dc-6bbf0f8673f4" />
       </list>
     </option>
     <option name="sessionPaths">
       <map>
+        <entry key="764c08c4-3357-4c95-b7dc-6bbf0f8673f4" value="/sessions/4c102f3e-34ec-4ec8-ad2e-4b37849a1c91" />
         <entry key="962db537-8b93-4322-81a1-ffb550d43b5f" value="/sessions/f1328c77-dedd-4333-9bdf-ba10b41154fd" />
+        <entry key="ce641495-3870-4d07-90ec-b369f58bab2a" value="/sessions/new" />
+        <entry key="ef4fc24e-c9d5-408e-b5ce-ab5234d51f5e" value="/sessions/253ef729-1ac9-4e59-b23e-9961c4d3173d" />
       </map>
     </option>
     <option name="sessionTitles">
       <map>
+        <entry key="764c08c4-3357-4c95-b7dc-6bbf0f8673f4" value="read my full project and nalysis" />
         <entry key="962db537-8b93-4322-81a1-ffb550d43b5f" value="You are a Senior Frontend Engineer and Design Syst" />
+        <entry key="ce641495-3870-4d07-90ec-b369f58bab2a" value="Claude Code" />
+        <entry key="ef4fc24e-c9d5-408e-b5ce-ab5234d51f5e" value="hi" />
       </map>
     </option>
   </component>

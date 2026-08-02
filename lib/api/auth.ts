@@ -1,5 +1,4 @@
 import { apiRequest } from "./client";
-import { getToken } from "@/lib/auth/session";
 
 export type UserRole = "admin" | "manager" | "salesman";
 
@@ -71,12 +70,12 @@ export const authApi = {
       body: { email, otp, password, password_confirmation: passwordConfirmation },
     }),
 
-  logout: () =>
+  logout: (token: string) =>
     apiRequest<null>("/auth/logout", {
       method: "POST",
       body: {},
-      token: getToken(),
+      token,
     }),
 
-  me: () => apiRequest<AuthUser>("/user", { token: getToken() }),
+  me: (token: string) => apiRequest<AuthUser>("/user", { token }),
 };
