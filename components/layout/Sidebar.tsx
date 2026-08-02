@@ -2,7 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Boxes, ShoppingCart, BarChart3, Users, Settings, type LucideIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  Boxes,
+  ShoppingCart,
+  BarChart3,
+  Users,
+  Contact,
+  CreditCard,
+  Tags,
+  Settings,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/lib/api/auth";
 
@@ -17,7 +28,10 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/inventory", label: "Inventory", icon: Boxes },
   { href: "/dashboard/orders", label: "Orders", icon: ShoppingCart },
+  { href: "/dashboard/customers", label: "Customers", icon: Contact },
   { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
+  { href: "/dashboard/expenses", label: "Expenses", icon: CreditCard },
+  { href: "/dashboard/expenses/categories", label: "Expense Categories", icon: Tags },
   { href: "/dashboard/users", label: "Users", icon: Users, adminOnly: true },
   { href: "/dashboard/settings", label: "Shop Settings", icon: Settings },
 ];
@@ -25,6 +39,12 @@ const NAV_ITEMS: NavItem[] = [
 export function Sidebar({ role }: { role?: UserRole }) {
   const pathname = usePathname();
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || role === "admin");
+
+  // Pick the most specific matching href so nested routes (e.g. /dashboard/expenses/categories)
+  // don't also light up a shorter-prefix sibling (e.g. /dashboard/expenses).
+  const activeHref = items
+    .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-surface md:flex">
@@ -37,8 +57,7 @@ export function Sidebar({ role }: { role?: UserRole }) {
 
       <nav className="flex flex-1 flex-col gap-xs p-md">
         {items.map((item) => {
-          const active =
-            item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href);
+          const active = item.href === activeHref;
           const Icon = item.icon;
           return (
             <Link
