@@ -15,6 +15,14 @@ export class ApiError extends Error {
   }
 }
 
+/** Thrown only for a real 401 — the token is missing/expired/invalid, not just a flaky request. */
+export class UnauthenticatedError extends ApiError {
+  constructor(message = "Unauthenticated.") {
+    super(message);
+    this.name = "UnauthenticatedError";
+  }
+}
+
 function formatErrors(errors: Envelope<unknown>["errors"]): string {
   if (!errors) return "Something went wrong. Please try again.";
   if (typeof errors === "string") return errors;
@@ -51,7 +59,7 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
   }
 
   if (res.status === 401) {
-    throw new ApiError("Unauthenticated.");
+    throw new UnauthenticatedError();
   }
 
   let json: Envelope<T>;
@@ -64,6 +72,5 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
   if (!json.success) {
     throw new ApiError(formatErrors(json.errors));
   }
-
   return json.data;
 }

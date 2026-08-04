@@ -19,6 +19,8 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
+  console.log('token', token);
+
   const setupRequired = request.cookies.get(SETUP_REQUIRED_COOKIE)?.value === "1";
   if (isDashboard && setupRequired && pathname !== SETTINGS_PATH) {
     return NextResponse.redirect(new URL(`${SETTINGS_PATH}?setup=1`, request.url));

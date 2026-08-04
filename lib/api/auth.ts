@@ -1,53 +1,16 @@
+import { cache } from "react";
 import { apiRequest } from "./client";
-
-export type UserRole = "admin" | "manager" | "salesman";
-
-export interface AuthUser {
-  id: number;
-  tenant_id: number;
-  name: string;
-  email: string;
-  role: UserRole;
-  is_active: boolean;
-  pin_login: boolean;
-  pin: string | null;
-  has_pin: boolean;
-}
-
-export interface ShopSettings {
-  id: number;
-  tenant_id: number;
-  shop_logo: string | null;
-  shop_name: string;
-  shop_email: string;
-  shop_phone: string;
-  shop_address: string;
-  vat_percent: string;
-  low_stock_threshold: number;
-  currency_symbol: string;
-  invoice_type: string;
-}
-
-export interface LoginResult {
-  token: string;
-  role: UserRole;
-  shop_settings: ShopSettings | null;
-}
-
-export interface RegisterResult {
-  token: string;
-  role: UserRole;
-}
+import {AuthUserType, LoginResultType, RegisterResultType} from "@/types/AuthType";
 
 export const authApi = {
   register: (name: string, email: string, password: string, passwordConfirmation: string) =>
-    apiRequest<RegisterResult>("/auth/register", {
+    apiRequest<RegisterResultType>("/auth/register", {
       method: "POST",
       body: { name, email, password, password_confirmation: passwordConfirmation },
     }),
 
   login: (email: string, password: string) =>
-    apiRequest<LoginResult>("/auth/login", {
+    apiRequest<LoginResultType>("/auth/login", {
       method: "POST",
       body: { email, password },
     }),
@@ -77,5 +40,7 @@ export const authApi = {
       token,
     }),
 
-  me: (token: string) => apiRequest<AuthUser>("/user", { token }),
+  // Cached per request so a layout + page that both need the current user (e.g. for an
+  // admin-only gate) share one call instead of racing two independent fetches to /user.
+  me: cache((token: string) => apiRequest<AuthUserType>("/user", { token })),
 };

@@ -50,17 +50,17 @@ export default async function ShopSettingsPage({
 
         <FormField id="shop_logo" label="Shop logo">
           <div className="flex items-center gap-base">
-            {settings?.shop_logo ? (
+            {settings?.business_logo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={settings.shop_logo}
+                src={settings.business_logo}
                 alt="Current shop logo"
                 className="size-14 shrink-0 rounded-md border border-border object-cover"
               />
             ) : null}
             <input
-              id="shop_logo"
-              name="shop_logo"
+              id="business_logo"
+              name="business_logo"
               type="file"
               accept=".png,.jpg,.jpeg,.webp,.gif,image/png,image/jpeg,image/webp,image/gif"
               className="block w-full text-small text-muted file:mr-base file:h-9 file:rounded-md file:border file:border-border file:bg-surface file:px-base file:text-small file:font-medium file:text-foreground hover:file:bg-surface-secondary"
@@ -70,31 +70,31 @@ export default async function ShopSettingsPage({
         </FormField>
 
         <div className="grid grid-cols-1 gap-lg sm:grid-cols-2">
-          <FormField id="shop_name" label="Shop name">
+          <FormField id="business_name" label="Shop name">
             <Input
-              id="shop_name"
-              name="shop_name"
+              id="business_name"
+              name="business_name"
               required
-              defaultValue={settings?.shop_name ?? ""}
+              defaultValue={settings?.business_name ?? ""}
               placeholder="Stockbin Shop"
             />
           </FormField>
 
-          <FormField id="shop_email" label="Shop email">
+          <FormField id="business_email" label="Shop email">
             <Input
-              id="shop_email"
-              name="shop_email"
+              id="business_email"
+              name="business_email"
               type="email"
-              defaultValue={settings?.shop_email ?? ""}
+              defaultValue={settings?.business_email ?? ""}
               placeholder="shop@example.com"
             />
           </FormField>
 
-          <FormField id="shop_phone" label="Shop phone">
+          <FormField id="business_phone" label="Shop phone">
             <Input
-              id="shop_phone"
-              name="shop_phone"
-              defaultValue={settings?.shop_phone ?? ""}
+              id="business_phone"
+              name="business_phone"
+              defaultValue={settings?.business_phone ?? ""}
               placeholder="01700000000"
             />
           </FormField>
@@ -140,11 +140,11 @@ export default async function ShopSettingsPage({
           </FormField>
         </div>
 
-        <FormField id="shop_address" label="Shop address">
+        <FormField id="business_address" label="Shop address">
           <Input
-            id="shop_address"
-            name="shop_address"
-            defaultValue={settings?.shop_address ?? ""}
+            id="business_address"
+            name="business_address"
+            defaultValue={settings?.business_address ?? ""}
             placeholder="Dhaka"
           />
         </FormField>

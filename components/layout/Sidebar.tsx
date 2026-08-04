@@ -17,7 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { UserRole } from "@/lib/api/auth";
+import type { UserRoleType } from "@/types/AuthType";
 
 interface NavItem {
   href: string;
@@ -41,7 +41,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/settings", label: "Shop Settings", icon: Settings },
 ];
 
-export function Sidebar({ role }: { role?: UserRole }) {
+export function Sidebar({ role }: { role?: UserRoleType }) {
   const pathname = usePathname();
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || role === "admin");
 

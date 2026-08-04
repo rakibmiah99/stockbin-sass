@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { authApi } from "@/lib/api/auth";
 import { usersApi } from "@/lib/api/users";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, UnauthenticatedError } from "@/lib/api/client";
 import { getAuthToken } from "@/lib/auth/cookies";
 import { updateUserAction } from "@/lib/actions/users";
 import { Button } from "@/components/ui/Button";
@@ -32,8 +32,12 @@ export default async function EditUserPage({
   const token = await getAuthToken();
   if (!token) redirect("/login");
 
-  const me = await authApi.me(token).catch(() => null);
-  if (!me || me.role !== "admin") redirect("/dashboard");
+  const me = await authApi.me(token).catch((err) => {
+    if (err instanceof UnauthenticatedError) return null;
+    throw err;
+  });
+  if (!me) redirect("/login");
+  if (me.role !== "admin") redirect("/dashboard");
 
   const user = await usersApi.get(token, userId).catch((err) => {
     if (err instanceof ApiError) return null;

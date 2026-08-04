@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { authApi } from "@/lib/api/auth";
+import { UnauthenticatedError } from "@/lib/api/client";
 import { clearAuthToken, getAuthToken } from "@/lib/auth/cookies";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
@@ -12,7 +13,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   let user;
   try {
     user = await authApi.me(token);
-  } catch {
+  } catch (err) {
+    if (!(err instanceof UnauthenticatedError)) throw err;
     await clearAuthToken();
     redirect("/login");
   }

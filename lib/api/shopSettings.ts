@@ -1,5 +1,6 @@
 import { apiRequest } from "./client";
-import type { ShopSettings } from "./auth";
+import {ShopSettingsType} from "@/types/ShopSettingsType";
+
 
 export interface ShopSettingsPayload {
   shop_name: string;
@@ -13,19 +14,19 @@ export interface ShopSettingsPayload {
 }
 
 export const shopSettingsApi = {
-  get: (token: string) => apiRequest<ShopSettings>("/shop-settings", { token }),
+  get: (token: string) => apiRequest<ShopSettingsType>("/business-settings", { token }),
 
   create: (token: string, payload: ShopSettingsPayload) =>
-    apiRequest<ShopSettings>("/shop-settings", { method: "POST", body: payload, token }),
+    apiRequest<ShopSettingsType>("/business-settings", { method: "POST", body: payload, token }),
 
   update: (token: string, payload: ShopSettingsPayload) =>
-    apiRequest<ShopSettings>("/shop-settings", { method: "PUT", body: payload, token }),
+    apiRequest<ShopSettingsType>("/business-settings", { method: "PUT", body: payload, token }),
 
   /** Create with a `shop_logo` file — multipart/form-data on the same create endpoint. */
   createWithLogo: (token: string, formData: FormData) =>
-    apiRequest<ShopSettings>("/shop-settings", { method: "POST", body: formData, token }),
+    apiRequest<ShopSettingsType>("/business-settings", { method: "POST", body: formData, token }),
 
   /** Update with a `shop_logo` file — dedicated multipart endpoint (PUT can't carry file uploads). */
   updateWithLogo: (token: string, formData: FormData) =>
-    apiRequest<ShopSettings>("/shop-settings/update", { method: "POST", body: formData, token }),
+    apiRequest<ShopSettingsType>("/business-settings/update", { method: "POST", body: formData, token }),
 };

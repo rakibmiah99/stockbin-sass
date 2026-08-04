@@ -2,7 +2,6 @@
 
 import { redirect } from "next/navigation";
 import { authApi } from "@/lib/api/auth";
-import type { ShopSettings } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import {
   clearAuthToken,
@@ -12,6 +11,7 @@ import {
   setResetFlow,
   setSetupRequired,
 } from "@/lib/auth/cookies";
+import {ShopSettingsType} from "@/types/ShopSettingsType";
 
 /** Redirects back to `path` with `error` (and any extra params) in the query string. */
 function errorRedirect(path: string, message: string, extraParams: Record<string, string> = {}): never {
@@ -29,7 +29,7 @@ export async function loginAction(formData: FormData): Promise<void> {
   const remember = formData.get("remember") === "on";
 
   let token: string;
-  let shopSettings: ShopSettings | null;
+  let shopSettings: ShopSettingsType | null;
   try {
     ({ token, shop_settings: shopSettings } = await authApi.login(email, password));
   } catch (err) {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { authApi } from "@/lib/api/auth";
+import { UnauthenticatedError } from "@/lib/api/client";
 import { getAuthToken } from "@/lib/auth/cookies";
 import { createUserAction } from "@/lib/actions/users";
 import { Button } from "@/components/ui/Button";
@@ -26,8 +27,12 @@ export default async function NewUserPage({
   const token = await getAuthToken();
   if (!token) redirect("/login");
 
-  const me = await authApi.me(token).catch(() => null);
-  if (!me || me.role !== "admin") redirect("/dashboard");
+  const me = await authApi.me(token).catch((err) => {
+    if (err instanceof UnauthenticatedError) return null;
+    throw err;
+  });
+  if (!me) redirect("/login");
+  if (me.role !== "admin") redirect("/dashboard");
 
   return (
     <div className="mx-auto flex w-full flex-col gap-xl">

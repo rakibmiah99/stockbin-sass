@@ -1,6 +1,6 @@
 import { LogOut } from "lucide-react";
 import { logoutAction } from "@/lib/actions/auth";
-import type { AuthUser } from "@/lib/api/auth";
+import type { AuthUserType } from "@/types/AuthType";
 
 function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -8,7 +8,7 @@ function initialsOf(name: string): string {
   return initials.join("") || "?";
 }
 
-export function Topbar({ user }: { user: AuthUser | null }) {
+export function Topbar({ user }: { user: AuthUserType | null }) {
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-surface px-xl">
       <h1 className="text-h5 font-semibold text-foreground">Dashboard</h1>

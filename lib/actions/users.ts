@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { usersApi } from "@/lib/api/users";
-import type { UserRole } from "@/lib/api/auth";
+import type { UserRoleType } from "@/types/AuthType";
 import { ApiError } from "@/lib/api/client";
 import { getAuthToken } from "@/lib/auth/cookies";
 
@@ -16,7 +16,7 @@ function errorRedirect(path: string, message: string): never {
   redirect(`${path}?${params.toString()}`);
 }
 
-function parseRole(value: FormDataEntryValue | null): UserRole {
+function parseRole(value: FormDataEntryValue | null): UserRoleType {
   return value === "admin" || value === "manager" ? value : "salesman";
 }
 
