@@ -1,71 +1,34 @@
-import { apiRequest } from "./client";
+import { apiFetch } from './client'
+import type { Expense, ExpensePeriod } from '@/types/Expense'
 
-export type ExpensePeriod = "last_100_records" | "last_30_days" | "last_60_days" | "last_90_days" | "custom";
-
-export interface Expense {
-  id: number;
-  tenant_id: number;
-  expense_category_id: number;
-  title: string;
-  amount: string;
-  expense_date: string;
-  note: string | null;
-  category: string;
-  expense_category: {
-    id: number;
-    name: string;
-    description: string | null;
-    is_active: boolean;
-    sort_order: number;
-  };
-}
-
-export interface ExpenseListParams {
-  period?: ExpensePeriod;
-  from_date?: string;
-  to_date?: string;
-  expense_category_id?: number;
-  search?: string;
-}
-
-export interface ExpensePayload {
-  expense_category_id: number;
-  title: string;
-  amount: number;
-  expense_date: string;
-  note?: string;
-}
-
-function buildListQuery(params: ExpenseListParams): string {
-  const query = new URLSearchParams();
-
-  if (params.search) {
-    // Per the API docs, `search` overrides and ignores every other filter.
-    query.set("search", params.search);
-  } else {
-    query.set("period", params.period ?? "last_100_records");
-    if (params.period === "custom") {
-      if (params.from_date) query.set("from_date", params.from_date);
-      if (params.to_date) query.set("to_date", params.to_date);
-    }
-    if (params.expense_category_id) {
-      query.set("expense_category_id", String(params.expense_category_id));
-    }
-  }
-
-  const qs = query.toString();
-  return qs ? `?${qs}` : "";
+type ExpenseListParams = {
+  period?: ExpensePeriod
+  from_date?: string
+  to_date?: string
+  expense_category_id?: string | number
 }
 
 export const expensesApi = {
-  list: (token: string, params: ExpenseListParams = {}) =>
-    apiRequest<Expense[]>(`/expenses${buildListQuery(params)}`, { token }),
+  list(params: ExpenseListParams = {}) {
+    const query = new URLSearchParams()
+    if (params.period) query.set('period', params.period)
+    if (params.from_date) query.set('from_date', params.from_date)
+    if (params.to_date) query.set('to_date', params.to_date)
+    if (params.expense_category_id) query.set('expense_category_id', String(params.expense_category_id))
 
-  create: (token: string, payload: ExpensePayload) =>
-    apiRequest<Expense>("/expenses", { method: "POST", body: payload, token }),
+    const qs = query.toString()
+    return apiFetch<Expense[]>(`/api/expenses${qs ? `?${qs}` : ''}`)
+  },
 
-  update: (token: string, id: number, payload: ExpensePayload) =>
-    apiRequest<Expense>(`/expenses/${id}`, { method: "PUT", body: payload, token }),
+  create(payload: { expense_category_id: number; title: string; amount: number; expense_date: string; note?: string }) {
+    return apiFetch<Expense>('/api/expenses', { method: 'POST', body: payload })
+  },
 
-  remove: (token: string, id: number) => apiRequest<null>(`/expenses/${id}`, { method: "DELETE", token }),
-};
+  update(id: number, payload: { expense_category_id: number; title: string; amount: number; expense_date: string; note?: string }) {
+    return apiFetch<Expense>(`/api/expenses/${id}`, { method: 'PUT', body: payload })
+  },
+
+  remove(id: number) {
+    return apiFetch<null>(`/api/expenses/${id}`, { method: 'DELETE' })
+  },
+}

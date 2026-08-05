@@ -1,30 +1,39 @@
-"use client";
+'use client'
 
-import type { FormEvent } from "react";
-import { deleteUserAction } from "@/lib/actions/users";
-import { cn } from "@/lib/utils";
+import { useState, useTransition } from 'react'
+import { deleteUserAction } from '@/actions/users'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { Button } from '@/components/ui/Button'
 
-export function DeleteUserButton({ userId, disabled }: { userId: number; disabled?: boolean }) {
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    if (!window.confirm("Delete this user? This cannot be undone.")) {
-      event.preventDefault();
-    }
+export function DeleteUserButton({ id, name }: { id: number; name: string }) {
+  const [open, setOpen] = useState(false)
+  const [pending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+
+  function handleConfirm() {
+    setError(null)
+    startTransition(async () => {
+      const result = await deleteUserAction(id)
+      if (result?.error) {
+        setError(result.error)
+        return
+      }
+      setOpen(false)
+    })
   }
 
   return (
-    <form action={deleteUserAction.bind(null, userId)} onSubmit={handleSubmit}>
-      <button
-        type="submit"
-        disabled={disabled}
-        title={disabled ? "You can't delete your own account" : undefined}
-        className={cn(
-          "rounded-md px-sm py-xs text-small font-medium text-danger transition-colors duration-[var(--motion-duration-fast)]",
-          "hover:bg-danger/10",
-          "disabled:cursor-not-allowed disabled:text-disabled-foreground disabled:hover:bg-transparent"
-        )}
-      >
-        Delete
-      </button>
-    </form>
-  );
+    <>
+      <Button variant="link" className="text-rose-600" onClick={() => setOpen(true)}>Delete</Button>
+      <ConfirmDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        onConfirm={handleConfirm}
+        pending={pending}
+        error={error}
+        title="Delete user"
+        description={`Are you sure you want to delete "${name}"? This can't be undone.`}
+      />
+    </>
+  )
 }

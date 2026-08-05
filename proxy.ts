@@ -1,34 +1,29 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { SETUP_REQUIRED_COOKIE, TOKEN_COOKIE } from "@/lib/auth/constants";
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { TOKEN_COOKIE } from '@/lib/auth/constants'
 
-const AUTH_PATHS = ["/login", "/signup", "/forgot-password"];
-const SETTINGS_PATH = "/dashboard/settings";
+const PUBLIC_ROUTES = ['/login', '/register', '/forgot-password']
 
 export function proxy(request: NextRequest) {
-  const token = request.cookies.get(TOKEN_COOKIE)?.value;
-  const { pathname } = request.nextUrl;
+  const { pathname } = request.nextUrl
+  const hasToken = Boolean(request.cookies.get(TOKEN_COOKIE)?.value)
+  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route))
 
-  const isAuthPage = AUTH_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
-  const isDashboard = pathname.startsWith("/dashboard");
-
-  if (isDashboard && !token) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-  if (isAuthPage && token) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  if (pathname === '/') {
+    return NextResponse.redirect(new URL(hasToken ? '/dashboard' : '/login', request.url))
   }
 
-  console.log('token', token);
-
-  const setupRequired = request.cookies.get(SETUP_REQUIRED_COOKIE)?.value === "1";
-  if (isDashboard && setupRequired && pathname !== SETTINGS_PATH) {
-    return NextResponse.redirect(new URL(`${SETTINGS_PATH}?setup=1`, request.url));
+  if (!hasToken && !isPublicRoute) {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  return NextResponse.next();
+  if (hasToken && isPublicRoute) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/signup", "/forgot-password"],
-};
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+}

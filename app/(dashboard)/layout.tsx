@@ -1,31 +1,8 @@
-import type { ReactNode } from "react";
-import { redirect } from "next/navigation";
-import { authApi } from "@/lib/api/auth";
-import { UnauthenticatedError } from "@/lib/api/client";
-import { clearAuthToken, getAuthToken } from "@/lib/auth/cookies";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Topbar } from "@/components/layout/Topbar";
+import { getCurrentUser } from '@/lib/auth/session'
+import { DashboardShell } from '@/components/layout/DashboardShell'
 
-export default async function DashboardLayout({ children }: { children: ReactNode }) {
-  const token = await getAuthToken();
-  if (!token) redirect("/login");
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const user = await getCurrentUser()
 
-  let user;
-  try {
-    user = await authApi.me(token);
-  } catch (err) {
-    if (!(err instanceof UnauthenticatedError)) throw err;
-    await clearAuthToken();
-    redirect("/login");
-  }
-
-  return (
-    <div className="flex min-h-screen flex-1 bg-background">
-      <Sidebar role={user.role} />
-      <div className="flex flex-1 flex-col">
-        <Topbar user={user} />
-        <main className="flex-1 p-xl">{children}</main>
-      </div>
-    </div>
-  );
+  return <DashboardShell user={user}>{children}</DashboardShell>
 }

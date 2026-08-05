@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+
+/* Drive `dark:` utilities off the `.dark` class (toggled in app/(dashboard)/layout.tsx)
+   instead of Tailwind v4's default `prefers-color-scheme` media query. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-border: var(--border);
+    --color-ring: var(--ring);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: var(--radius);
+    --radius-lg: calc(var(--radius) + 4px);
+    --radius-xl: calc(var(--radius) + 8px);
+    --font-weight-500: 500;
+    --font-weight-600: 600;
+    --font-weight-700: 700;
+    --font-weight-800: 800;
+}
+
+:root {
+    --background: #F0FAF9;
+    --foreground: #0D2926;
+    --card: #FFFFFF;
+    --card-foreground: #0D2926;
+    --primary: #0A7C6E;
+    --primary-foreground: #FFFFFF;
+    --secondary: #E4F5F3;
+    --secondary-foreground: #0A7C6E;
+    --muted: #F5FAFA;
+    --muted-foreground: #5A8A84;
+    --accent: #0ABFA3;
+    --accent-foreground: #FFFFFF;
+    --border: #C8E8E4;
+    --ring: #0A7C6E;
+    --radius: 12px;
+}
+
+.dark {
+    --background: #091714;
+    --foreground: #E0F5F2;
+    --card: #112320;
+    --card-foreground: #E0F5F2;
+    --primary: #0ABFA3;
+    --primary-foreground: #091714;
+    --secondary: #1A3530;
+    --secondary-foreground: #0ABFA3;
+    --muted: #1A2E2B;
+    --muted-foreground: #7ABDB5;
+    --accent: #0A7C6E;
+    --accent-foreground: #E0F5F2;
+    --border: #1E3D38;
+    --ring: #0ABFA3;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    font-family: 'Outfit', system-ui, sans-serif;
+}
+
+body {
+    margin: 0;
+    background-color: var(--background);
+    color: var(--foreground);
+    transition: background-color 0.2s, color 0.2s;
+}
+
+/* Hide scrollbars by default */
+::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+}
+
+.font-mono {
+    font-family: 'JetBrains Mono', monospace;
+}

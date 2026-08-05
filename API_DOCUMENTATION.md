@@ -13,21 +13,27 @@
 - Protected routes require an active authenticated user and are tenant-scoped
 - Public routes (no Bearer token): `/api/auth/*` (except logout) and `GET /api/app-versions`
 - Inactive authenticated users are rejected (`Your account is inactive.`) and the current token is revoked
-- Admin-only routes (`/users*`) require role `admin`
+- Admin-only routes (`/users*`, `/menus`) require role `admin`
+- Login / register / pin-login responses include `menus: string[]` for frontend menu visibility only (no backend menu permission checks on business APIs)
 - Date-only fields (`expense_date`, `stock_date`, `payment_date`, `invoice_date`, `return_date`) use `YYYY-MM-DD`
+- Business dates must be on or before **today** in the client timezone (`X-Timezone`; missing/invalid → `UTC`). Additionally, `return_date` and `payment_date` must be on or after the linked invoice’s `invoice_date`
 - Timestamps are stored in UTC
 - Passwords require **minimum 8 characters** only (no mixed-case / numbers / symbols rule)
-- Password whitespace is preserved on register/login; trimmed on password reset, profile update, and admin user create/update
+- Password whitespace is trimmed on register, login, password reset, profile update, and admin user create/update
 - User PIN is stored and returned as **plain text** (exactly 4 digits); profile/user payloads include both `pin` and `has_pin`
 - Companion Postman collection: `postman/Stockbin-API-Admin.postman_collection.json`
 
+
+
 ### Roles
 
-| Role | Access |
-| --- | --- |
-| `admin` | Full tenant access, including `/users*` management |
-| `manager` | Same business APIs as salesman (not user admin) |
-| `salesman` | Same business APIs as manager (not user admin) |
+
+| Role       | Access                                             |
+| ---------- | -------------------------------------------------- |
+| `admin`    | Full tenant access, including `/users*` management |
+| `manager`  | Same business APIs as salesman (not user admin)    |
+| `salesman` | Same business APIs as manager (not user admin)     |
+
 
 `role` on create/update managed users must be one of: `admin`, `salesman`, `manager`.
 
@@ -35,12 +41,16 @@
 
 After `php artisan migrate:fresh --seed` (password `password`, PIN `1234` when `pin_login` is enabled):
 
-| Email | Role |
-| --- | --- |
-| `admin@stockbin.test` | admin |
-| `admin2@stockbin.test` | admin |
+
+| Email                    | Role     |
+| ------------------------ | -------- |
+| `admin@stockbin.test`    | admin    |
+| `admin2@stockbin.test`   | admin    |
 | `salesman@stockbin.test` | salesman |
-| `manager@stockbin.test` | manager |
+| `manager@stockbin.test`  | manager  |
+
+
+
 
 ### Required headers
 
@@ -114,6 +124,7 @@ Error:
   "errors": "Validation or authorization message"
 }
 ```
+
 Successful deletes and empty-success actions return `"data": null`.
 
 ---
@@ -143,13 +154,39 @@ Response Payload JSON:
   "message": "Registration successful.",
   "data": {
     "token": "1|sanctum-token",
-    "role": "admin"
+    "role": "admin",
+    "business_settings": null,
+    "menus": [
+      "home",
+      "create_invoice",
+      "categories",
+      "products",
+      "stocks",
+      "wastage",
+      "returns",
+      "customers",
+      "users",
+      "invoices",
+      "draft_invoice",
+      "expense_categories",
+      "expense",
+      "reports",
+      "reports_sales",
+      "reports_profit_loss",
+      "reports_due",
+      "reports_stock",
+      "reports_expenses",
+      "business",
+      "variants",
+      "profile",
+      "low_stock"
+    ]
   },
   "errors": "No Errors"
 }
 ```
 
-Creates a new tenant and its first active `admin`. Email is globally unique. Password requires minimum 8 characters (no complexity mix). Password whitespace is preserved; name/email are trimmed.
+Creates a new tenant and its first active `admin`. Email is globally unique. Password requires minimum 8 characters (no complexity mix). Name, email, and password whitespace are trimmed. `business_settings` is `null` until business settings are created. `menus` is the list of menu keys assigned to the user (all menus for a new admin when the menu catalog is seeded).
 
 API Name: Login With Password
 API End Point: `POST /api/auth/login`
@@ -171,25 +208,50 @@ Response Payload JSON:
   "data": {
     "token": "1|sanctum-token",
     "role": "admin",
-    "shop_settings": {
+    "business_settings": {
       "id": 1,
       "tenant_id": 1,
-      "shop_logo": "https://example.com/storage/shop-logos/logo.webp",
-      "shop_name": "Stockbin Shop",
-      "shop_email": "shop@example.com",
-      "shop_phone": "01700000000",
-      "shop_address": "Dhaka",
+      "business_logo": "https://example.com/storage/business-logos/logo.webp",
+      "business_name": "Stockbin Business",
+      "business_email": "business@example.com",
+      "business_phone": "01700000000",
+      "business_address": "Dhaka",
       "vat_percent": "15.00",
       "low_stock_threshold": 5,
       "currency_symbol": "৳",
       "invoice_type": "standard"
-    }
+    },
+    "menus": [
+      "home",
+      "create_invoice",
+      "categories",
+      "products",
+      "stocks",
+      "wastage",
+      "returns",
+      "customers",
+      "users",
+      "invoices",
+      "draft_invoice",
+      "expense_categories",
+      "expense",
+      "reports",
+      "reports_sales",
+      "reports_profit_loss",
+      "reports_due",
+      "reports_stock",
+      "reports_expenses",
+      "business",
+      "variants",
+      "profile",
+      "low_stock"
+    ]
   },
   "errors": "No Errors"
 }
 ```
 
-`shop_settings` is `null` when the tenant has no settings yet (e.g. fresh registration). Inactive users and users under inactive tenants cannot log in. Email is trimmed; password whitespace is preserved.
+`business_settings` is `null` when the tenant has no settings yet (e.g. fresh registration). `menus` drives frontend menu visibility only (no backend API menu checks). Inactive users and users under inactive tenants cannot log in. Email and password whitespace are trimmed.
 
 API Name: Login With PIN
 API End Point: `POST /api/auth/pin-login`
@@ -211,25 +273,38 @@ Response Payload JSON:
   "data": {
     "token": "1|sanctum-token",
     "role": "salesman",
-    "shop_settings": {
+    "business_settings": {
       "id": 1,
       "tenant_id": 1,
-      "shop_logo": "https://example.com/storage/shop-logos/logo.webp",
-      "shop_name": "Stockbin Shop",
-      "shop_email": "shop@example.com",
-      "shop_phone": "01700000000",
-      "shop_address": "Dhaka",
+      "business_logo": "https://example.com/storage/business-logos/logo.webp",
+      "business_name": "Stockbin Business",
+      "business_email": "business@example.com",
+      "business_phone": "01700000000",
+      "business_address": "Dhaka",
       "vat_percent": "15.00",
       "low_stock_threshold": 5,
       "currency_symbol": "৳",
       "invoice_type": "standard"
-    }
+    },
+    "menus": [
+      "home",
+      "create_invoice",
+      "products",
+      "stocks",
+      "wastage",
+      "returns",
+      "customers",
+      "invoices",
+      "draft_invoice",
+      "profile",
+      "low_stock"
+    ]
   },
   "errors": "No Errors"
 }
 ```
 
-`shop_settings` is `null` when the tenant has no settings yet. PIN must be exactly 4 digits, stored/compared as plain text, must be set on the user, and `pin_login` must be enabled.
+`business_settings` is `null` when the tenant has no settings yet. PIN must be exactly 4 digits, stored/compared as plain text, must be set on the user, and `pin_login` must be enabled. `menus` is the assigned menu-key list for frontend visibility.
 
 API Name: Forgot Password Send OTP
 API End Point: `POST /api/auth/forgot-password`
@@ -387,33 +462,43 @@ Response Payload JSON:
 
 Public — no `Authorization` header required. Results are ordered by `app_version_code` descending (latest first).
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `app_version_code` | integer | Minimum required mobile build number (e.g. `1` from Flutter `1.0.0+1`) |
-| `force_update` | boolean | When `true`, clients below `app_version_code` must block usage until update |
-| `is_reviewer` | boolean | Reviewer / app-store review mode flag |
-| `is_maintenance` | boolean | When `true`, app should show maintenance screen and block usage |
-| `maintenance_msg` | string or null | Message to display during maintenance mode |
+
+| Field              | Type           | Description                                                                 |
+| ------------------ | -------------- | --------------------------------------------------------------------------- |
+| `app_version_code` | integer        | Minimum required mobile build number (e.g. `1` from Flutter `1.0.0+1`)      |
+| `force_update`     | boolean        | When `true`, clients below `app_version_code` must block usage until update |
+| `is_reviewer`      | boolean        | Reviewer / app-store review mode flag                                       |
+| `is_maintenance`   | boolean        | When `true`, app should show maintenance screen and block usage             |
+| `maintenance_msg`  | string or null | Message to display during maintenance mode                                  |
+
 
 ---
+
+
 
 ## Dashboard
 
 Home-screen overview for the authenticated tenant. Uses `X-Timezone` for “today” and period windows.
 
-| Action | Endpoint |
-| --- | --- |
+
+| Action   | Endpoint                                |
+| -------- | --------------------------------------- |
 | Overview | `GET /api/dashboard?period=last_7_days` |
+
+
+
 
 ### Period values
 
-| `period` | Meaning | Chart buckets |
-| --- | --- | --- |
-| `today` | Current local calendar day | 24 hourly points (0–23) |
-| `last_7_days` | Today and the previous 6 days (**default**) | 7 daily points |
-| `last_30_days` | Today and the previous 29 days | 30 daily points |
-| `last_60_days` | Today and the previous 59 days | 60 daily points |
-| `last_90_days` | Today and the previous 89 days | 90 daily points |
+
+| `period`       | Meaning                                     | Chart buckets                            |
+| -------------- | ------------------------------------------- | ---------------------------------------- |
+| `today`        | Current local calendar day                  | 1 daily point (business date; no hourly) |
+| `last_7_days`  | Today and the previous 6 days (**default**) | 7 daily points                           |
+| `last_30_days` | Today and the previous 29 days              | 30 daily points                          |
+| `last_60_days` | Today and the previous 59 days              | 60 daily points                          |
+| `last_90_days` | Today and the previous 89 days              | 90 daily points                          |
+
 
 Missing day/hour buckets are filled with `0`.
 
@@ -442,9 +527,9 @@ Response Payload JSON:
       "chart": [0, 0, 0, 0, 1000, 0, 0]
     },
     "profit": {
-      "value": "600.00",
+      "value": "550.00",
       "trend_percent": 12.3,
-      "chart": [0, 0, 0, 0, 600, 0, 0]
+      "chart": [0, 0, 0, 0, 550, 0, 0]
     },
     "due": {
       "value": "750.50",
@@ -461,6 +546,11 @@ Response Payload JSON:
       "trend_percent": null,
       "chart": [0, 0, 0, 0, 0, 80, 0]
     },
+    "wastage": {
+      "value": "40.00",
+      "trend_percent": null,
+      "chart": [0, 0, 0, 0, 0, 40, 0]
+    },
     "vat_collected": {
       "value": "50.00",
       "trend_percent": 8.4,
@@ -476,31 +566,40 @@ Response Payload JSON:
 
 Requires Bearer token. Money fields are strings with 2 decimals.
 
-| Field | Description |
-| --- | --- |
-| `sales` | Sum of `grand_total` for completed invoices in the period |
-| `profit` | `sales − Σ(purchase_cost_total)` on those invoice items |
-| `vat_collected` | Sum of `vat_amount` for completed invoices |
-| `expenses` | Sum of expense `amount` by `expense_date` |
-| `returns` | Sum of return `refund_amount` by `return_date` |
-| `due` | Current customer dues (`total_due > 0`); not period-scoped; `chart` is always `null` |
-| `trend_percent` | % change vs the previous equal-length window; `null` when previous total is `0` |
-| `chart` | Sparkline points (left = oldest, right = newest) |
-| `completed_orders` / `draft_orders` | Invoice counts in the period by `invoice_status` |
-| `low_stock_count` | Products where remaining qty ≤ shop `low_stock_threshold` |
+
+| Field                               | Description                                                                                                                                         |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sales`                             | `Σ grand_total` for `completed`/`returned` invoices by `invoice_date`, minus all return/wastage `return_value` by `return_date`                     |
+| `profit`                            | `(sales − vat_collected) − COGS`; COGS = layer `purchase_unit_cost × sold_qty` on sale day minus `purchase_unit_cost × restocked_qty` on return day |
+| `vat_collected`                     | `Σ vat_amount` on sale day minus proportional VAT credit of all return/wastage rows (`return_value × vat_amount / grand_total`) on return day        |
+| `expenses`                          | Sum of expense `amount` by `expense_date`                                                                                                           |
+| `returns`                           | Restock-only sum of `return_value` by `return_date` (`total_restocked_qty > 0` and `total_wastage_qty = 0`; merchandise credit, not cash `refund_amount`) |
+| `wastage`                           | Wastage-only sum of `return_value` by `return_date` (`total_wastage_qty > 0` and `total_restocked_qty = 0`)                                              |
+| `due`                               | Current customer dues (`total_due > 0`); not period-scoped; `chart` is always `null`                                                                |
+| `trend_percent`                     | % change vs the previous equal-length window; `null` when previous total is `0`                                                                     |
+| `chart`                             | Sparkline points (left = oldest, right = newest)                                                                                                    |
+| `completed_orders` / `draft_orders` | Period invoice counts: `completed_orders` = `completed` + `returned` (sale history); `draft_orders` = `draft` only                                  |
+| `low_stock_count`                   | Active products that have been stocked at least once, where remaining qty ≤ shop `low_stock_threshold`                                              |
+
 
 ---
+
+
 
 ## Dashboard Tab Lists
 
 Home tab content. **No date / period filter.** Each endpoint returns at most **5** items plus a total `count`. Logic lives only in `DashboardService` (does not call other feature services).
 
-| Action | Endpoint |
-| --- | --- |
-| Low stock | `GET /api/dashboard/low-stock` |
-| Recent invoices | `GET /api/dashboard/invoices` |
-| Due customers | `GET /api/dashboard/due-customers` |
-| Recent expenses | `GET /api/dashboard/expenses` |
+
+| Action          | Endpoint                           |
+| --------------- | ---------------------------------- |
+| Low stock       | `GET /api/dashboard/low-stock`     |
+| Recent invoices | `GET /api/dashboard/invoices`      |
+| Due customers   | `GET /api/dashboard/due-customers` |
+| Recent expenses | `GET /api/dashboard/expenses`      |
+
+
+
 
 ### Low stock
 
@@ -529,7 +628,7 @@ API End Point: `GET /api/dashboard/low-stock`
 }
 ```
 
-Ordered by lowest `remaining_qty` first. `count` is the full low-stock total; `items` max 5.
+Only **active** products that have at least one stock batch and `SUM(remaining_qty) ≤ low_stock_threshold`. Inactive and never-stocked products are excluded. Ordered by lowest `remaining_qty` first. `count` is the full low-stock total; `items` max 5.
 
 ### Invoices
 
@@ -561,6 +660,8 @@ Latest **completed** invoices only (drafts excluded). Newest `invoice_date` firs
 }
 ```
 
+
+
 ### Due customers
 
 API Name: Dashboard Due Customers  
@@ -586,6 +687,8 @@ Customers with `total_due > 0`, highest due first. Max 5 items.
   "errors": "No Errors"
 }
 ```
+
+
 
 ### Expenses
 
@@ -616,38 +719,46 @@ Latest expenses by `expense_date` (no date window). Max 5 items.
 
 ---
 
+
+
 ## Reports
 
 Flutter Reports screens. Tenant-scoped. Uses `X-Timezone` for period windows. Dedicated `ReportService` (does not reuse `DashboardService`).
 
-| Report | Endpoint |
-| --- | --- |
-| Sales | `GET /api/reports/sales` |
-| Sales PDF export | `GET /api/reports/sales/export/pdf` |
-| Sales Excel export | `GET /api/reports/sales/export/excel` |
-| Profit Loss | `GET /api/reports/profit-loss` |
-| Profit Loss PDF export | `GET /api/reports/profit-loss/export/pdf` |
+
+| Report                   | Endpoint                                    |
+| ------------------------ | ------------------------------------------- |
+| Sales                    | `GET /api/reports/sales`                    |
+| Sales PDF export         | `GET /api/reports/sales/export/pdf`         |
+| Sales Excel export       | `GET /api/reports/sales/export/excel`       |
+| Profit Loss              | `GET /api/reports/profit-loss`              |
+| Profit Loss PDF export   | `GET /api/reports/profit-loss/export/pdf`   |
 | Profit Loss Excel export | `GET /api/reports/profit-loss/export/excel` |
-| Due | `GET /api/reports/due` |
-| Due PDF export | `GET /api/reports/due/export/pdf` |
-| Due Excel export | `GET /api/reports/due/export/excel` |
-| Stock | `GET /api/reports/stock` |
-| Stock PDF export | `GET /api/reports/stock/export/pdf` |
-| Stock Excel export | `GET /api/reports/stock/export/excel` |
-| Expense | `GET /api/reports/expenses` |
-| Expense PDF export | `GET /api/reports/expenses/export/pdf` |
-| Expense Excel export | `GET /api/reports/expenses/export/excel` |
+| Due                      | `GET /api/reports/due`                      |
+| Due PDF export           | `GET /api/reports/due/export/pdf`           |
+| Due Excel export         | `GET /api/reports/due/export/excel`         |
+| Stock                    | `GET /api/reports/stock`                    |
+| Stock PDF export         | `GET /api/reports/stock/export/pdf`         |
+| Stock Excel export       | `GET /api/reports/stock/export/excel`       |
+| Expense                  | `GET /api/reports/expenses`                 |
+| Expense PDF export       | `GET /api/reports/expenses/export/pdf`      |
+| Expense Excel export     | `GET /api/reports/expenses/export/excel`    |
+
+
+
 
 ### Period values
 
-| `period` | Meaning |
-| --- | --- |
-| `today` | Current local calendar day |
-| `last_7_days` | Today + previous 6 days (**default**) |
-| `last_30_days` | Today + previous 29 days |
-| `last_60_days` | Today + previous 59 days |
-| `last_90_days` | Today + previous 89 days |
-| `custom` | Requires `from_date` + `to_date` (`Y-m-d`); **max 120 days** inclusive |
+
+| `period`       | Meaning                                                                |
+| -------------- | ---------------------------------------------------------------------- |
+| `today`        | Current local calendar day                                             |
+| `last_7_days`  | Today + previous 6 days (**default**)                                  |
+| `last_30_days` | Today + previous 29 days                                               |
+| `last_60_days` | Today + previous 59 days                                               |
+| `last_90_days` | Today + previous 89 days                                               |
+| `custom`       | Requires `from_date` + `to_date` (`Y-m-d`); **max 120 days** inclusive |
+
 
 Query examples: `?period=last_7_days` · `?period=custom&from_date=2026-07-01&to_date=2026-07-15`
 
@@ -656,8 +767,11 @@ Query examples: `?period=last_7_days` · `?period=custom&from_date=2026-07-01&to
 
 **List caps:** Due items / Stock low-stock items / Expense recent_items → **100**. KPI counts are full snapshots.
 
-**Chart:** Sales & P&L use `{ label, value }` points — `today` = 24 hourly; other periods = one point per day.  
-**P&L formula:** `net_profit = sales − COGS − expenses` (`COGS = Σ purchase_cost_total` on completed invoice items).
+**Chart:** Sales & P&L use `{ label, value }` points — always one point per business day (`today` = 1 point; longer periods = one point per day in range).  
+**P&L formula:** `net_profit = (sales − VAT) − COGS − expenses`.  
+`sales = Σ grand_total (completed|returned, invoice_date) − Σ return_value (return_date)`;  
+`VAT = Σ vat_amount − Σ vat_credit`;  
+`COGS = Σ (purchase_unit_cost × sold_qty) − Σ (purchase_unit_cost × restocked_qty)`. Headline `total_sales` stays VAT-inclusive of net sales.
 
 API Name: Sales Report  
 API End Point: `GET /api/reports/sales?period=last_7_days`
@@ -693,7 +807,7 @@ Response Payload JSON:
 API Name: Sales Report PDF Export  
 API End Point: `GET /api/reports/sales/export/pdf?period=last_30_days`  
 Auth: Bearer token. Same period query as Sales Report.  
-Response: binary `application/pdf` download (`Sales-Report-{from}-to-{to}.pdf`). Product-wise line rows (max 2000). KPIs: Total Sales, Total Discount, Orders. No JSON Resource.
+Response: binary `application/pdf` download (`Sales-Report-{from}-to-{to}.pdf`). Product-wise line rows (max 2000). KPIs: Total Sales (VAT-inclusive `grand_total` net of period returns), Total Discount (`Σ sale_discount_amount` + `Σ invoice_discount_amount` on period `completed`/`returned` invoices), Orders. No JSON Resource.
 
 API Name: Sales Report Excel Export  
 API End Point: `GET /api/reports/sales/export/excel?period=last_30_days`  
@@ -730,8 +844,8 @@ API End Point: `GET /api/reports/profit-loss/export/pdf?period=last_30_days`
 Auth: Bearer token. Same period query as Profit Loss Report (date-scoped).  
 Response: binary `application/pdf` download (`Profit-Loss-Report-{from}-to-{to}.pdf`).  
 Summary KPIs: Total Sales, COGS, Gross Profit, Total Expense, Net Profit.  
-Breakdown rows match chart granularity (`today` = hourly, else daily): Label, Sales, COGS, Expenses, Net.  
-Formula: `net = sales − COGS − expenses` (`COGS = Σ purchase_cost_total` on completed invoice items).
+Breakdown rows match chart granularity (always daily): Label, Sales, COGS, Expenses, Net.  
+Formula: `net = (sales − VAT) − COGS − expenses` with return-period credits (`return_value`, proportional VAT credit, restock COGS only).
 
 API Name: Profit Loss Report Excel Export  
 API End Point: `GET /api/reports/profit-loss/export/excel?period=last_30_days`  
@@ -778,6 +892,12 @@ Response: binary `.xlsx` download (`Due-Report-{from}-to-{to}.xlsx`).
 API Name: Stock Report  
 API End Point: `GET /api/reports/stock?period=last_7_days`
 
+Period is echoed for the date window; metrics are a **current stock snapshot**.
+
+- `stock_value` — inventory at cost: `Σ (product_stocks.remaining_qty × product_stocks.purchase_unit_cost)` across all batches for the tenant
+- `low_stock_count` — active products with at least one stock batch where `SUM(remaining_qty) ≤ shop.low_stock_threshold` (full count; inactive and never-stocked excluded)
+- `items` — those low-stock products only (sale `price` for display), ordered by remaining ASC, max 100
+
 Response Payload JSON:
 
 ```JSON
@@ -808,6 +928,7 @@ API End Point: `GET /api/reports/stock/export/pdf?period=last_30_days`
 Auth: Bearer token. Period is **date-scoped** for movement totals (unlike JSON Stock snapshot).  
 Response: binary `application/pdf` (`Stock-Report-{from}-to-{to}.pdf`).  
 Product-wise rows (max 2000): Date (as-of `to_date`), Product, Category, Color, Size, Weight, Unit, Stock total (period stock in), Qty sale, Qty refund (restocked), Qty wastage, Remaining qty (current).  
+`Qty sale` = `sold_qty` from invoices with status `completed` or `returned` in the period (`invoice_date`). Full returns do not erase historical sold qty; restock/wastage appear in refund/wastage columns by `return_date`.  
 KPIs: Products, Stock in, Qty sale, Qty refund, Qty wastage, Remaining.
 
 API Name: Stock Report Excel Export  
@@ -1026,6 +1147,16 @@ Response Payload JSON:
 
 `tenant_id` is taken from the authenticated admin. Email is globally unique. Password requires minimum 8 characters (no complexity mix). `role` must be `admin`, `salesman`, or `manager`. `is_active` is optional (defaults per factory/service). Response includes `pin` (usually `null`) and `has_pin`.
 
+**Menus on create:** this body does **not** accept `menus`. Role default menus are assigned automatically. To save the menus the admin ticked in the app, call `PUT /api/users/{user_id}/menus` after create (see [Menus](#menus-admin-only)).
+
+**App flow (create user + tick menus):**
+
+1. `GET /api/menus` — load catalog for checkboxes  
+2. `POST /api/users` — create user (role defaults applied)  
+3. `PUT /api/users/{user_id}/menus` — body `{ "menus": ["home", "products", ...] }` with ticked keys  
+
+To change menus later: `GET /api/users/{user_id}/menus` then `PUT /api/users/{user_id}/menus`.
+
 API Name: Create Tenant Manager
 API End Point: `POST /api/users`
 Request Payload JSON:
@@ -1188,12 +1319,31 @@ An admin cannot delete their own account, and a tenant must retain at least one 
 
 
 
-## Shop Settings
+## Menus (Admin Only)
 
-Only one settings row is allowed per tenant.
+Requires `auth:sanctum` + `active` + `admin`. Menu keys control **frontend visibility only** — business APIs are not blocked by missing menus.
 
-API Name: Get Shop Settings
-API End Point: `GET /api/shop-settings`
+### App assign flow (tick menus)
+
+| Step | API | Purpose |
+| --- | --- | --- |
+| 1 | `GET /api/menus` | Checkbox list (`key`, `name`, `parent_key`) |
+| 2 | `POST /api/users` | Create user (no `menus` field; role defaults applied) |
+| 3 | `PUT /api/users/{user_id}/menus` | Save ticked keys — **this is the save/update menus API** |
+| Edit later | `GET` then `PUT` `/api/users/{user_id}/menus` | Load + replace assignment |
+
+Creating a user assigns role defaults until step 3 overwrites them:
+
+| Role | Default menus |
+| --- | --- |
+| `admin` | All catalog keys |
+| `manager` | All except `users` |
+| `salesman` | `home`, `create_invoice`, `products`, `stocks`, `wastage`, `returns`, `customers`, `invoices`, `draft_invoice`, `profile`, `low_stock` |
+
+Full catalog keys: `home`, `create_invoice`, `categories`, `products`, `stocks`, `wastage`, `returns`, `customers`, `users`, `invoices`, `draft_invoice`, `expense_categories`, `expense`, `reports`, `reports_sales`, `reports_profit_loss`, `reports_due`, `reports_stock`, `reports_expenses`, `business`, `variants`, `profile`, `low_stock`.
+
+API Name: List Menus
+API End Point: `GET /api/menus`
 Request Payload JSON:
 
 ```JSON
@@ -1205,15 +1355,153 @@ Response Payload JSON:
 ```JSON
 {
   "success": true,
-  "message": "Shop settings retrieved successfully.",
+  "message": "Menus retrieved successfully.",
+  "data": [
+    {
+      "id": 1,
+      "key": "home",
+      "name": "Home",
+      "parent_key": null,
+      "sort_order": 10,
+      "is_active": true
+    },
+    {
+      "id": 14,
+      "key": "reports",
+      "name": "Reports",
+      "parent_key": null,
+      "sort_order": 140,
+      "is_active": true
+    },
+    {
+      "id": 15,
+      "key": "reports_sales",
+      "name": "Sales Report",
+      "parent_key": "reports",
+      "sort_order": 141,
+      "is_active": true
+    }
+  ],
+  "errors": "No Errors"
+}
+```
+
+API Name: Get User Menus
+API End Point: `GET /api/users/{user_id}/menus`
+Request Payload JSON:
+
+```JSON
+{}
+```
+
+Response Payload JSON:
+
+```JSON
+{
+  "success": true,
+  "message": "User menus retrieved successfully.",
+  "data": [
+    {
+      "id": 1,
+      "key": "home",
+      "name": "Home",
+      "parent_key": null,
+      "sort_order": 10,
+      "is_active": true
+    },
+    {
+      "id": 17,
+      "key": "profile",
+      "name": "Profile",
+      "parent_key": null,
+      "sort_order": 170,
+      "is_active": true
+    }
+  ],
+  "errors": "No Errors"
+}
+```
+
+Same-tenant users only.
+
+API Name: Sync User Menus
+API End Point: `PUT /api/users/{user_id}/menus`
+Request Payload JSON:
+
+```JSON
+{
+  "menus": ["home", "profile", "customers"]
+}
+```
+
+Response Payload JSON:
+
+```JSON
+{
+  "success": true,
+  "message": "User menus updated successfully.",
+  "data": [
+    {
+      "id": 1,
+      "key": "home",
+      "name": "Home",
+      "parent_key": null,
+      "sort_order": 10,
+      "is_active": true
+    },
+    {
+      "id": 8,
+      "key": "customers",
+      "name": "Customers",
+      "parent_key": null,
+      "sort_order": 80,
+      "is_active": true
+    },
+    {
+      "id": 17,
+      "key": "profile",
+      "name": "Profile",
+      "parent_key": null,
+      "sort_order": 170,
+      "is_active": true
+    }
+  ],
+  "errors": "No Errors"
+}
+```
+
+Replaces the user's menu set (save/update after admin ticks checkboxes). Unknown keys fail validation. Same-tenant only. This is the API to call after `POST /api/users` when assigning menus from the app.
+
+---
+
+
+
+## Business Settings
+
+Only one settings row is allowed per tenant.
+
+API Name: Get Business Settings
+API End Point: `GET /api/business-settings`
+Request Payload JSON:
+
+```JSON
+{}
+```
+
+Response Payload JSON:
+
+```JSON
+{
+  "success": true,
+  "message": "Business settings retrieved successfully.",
   "data": {
     "id": 1,
     "tenant_id": 1,
-    "shop_logo": "https://example.com/storage/shop-logos/logo.webp",
-    "shop_name": "Stockbin Shop",
-    "shop_email": "shop@example.com",
-    "shop_phone": "01700000000",
-    "shop_address": "Dhaka",
+    "business_logo": "https://example.com/storage/business-logos/logo.webp",
+    "business_name": "Stockbin Business",
+    "business_email": "business@example.com",
+    "business_phone": "01700000000",
+    "business_address": "Dhaka",
     "vat_percent": "15.00",
     "low_stock_threshold": 5,
     "currency_symbol": "৳",
@@ -1223,17 +1511,17 @@ Response Payload JSON:
 }
 ```
 
-API Name: Create Shop Settings
-API End Point: `POST /api/shop-settings`
+API Name: Create Business Settings
+API End Point: `POST /api/business-settings`
 Request Payload JSON:
 
 ```JSON
 {
-  "shop_logo": "<file>",
-  "shop_name": "Stockbin Shop",
-  "shop_email": "shop@example.com",
-  "shop_phone": "01700000000",
-  "shop_address": "Dhaka",
+  "business_logo": "<file>",
+  "business_name": "Stockbin Business",
+  "business_email": "business@example.com",
+  "business_phone": "01700000000",
+  "business_address": "Dhaka",
   "vat_percent": 15,
   "low_stock_threshold": 5,
   "currency_symbol": "৳",
@@ -1246,15 +1534,15 @@ Response Payload JSON:
 ```JSON
 {
   "success": true,
-  "message": "Shop settings created successfully.",
+  "message": "Business settings created successfully.",
   "data": {
     "id": 1,
     "tenant_id": 1,
-    "shop_logo": "https://example.com/storage/shop-logos/logo.webp",
-    "shop_name": "Stockbin Shop",
-    "shop_email": "shop@example.com",
-    "shop_phone": "01700000000",
-    "shop_address": "Dhaka",
+    "business_logo": "https://example.com/storage/business-logos/logo.webp",
+    "business_name": "Stockbin Business",
+    "business_email": "business@example.com",
+    "business_phone": "01700000000",
+    "business_address": "Dhaka",
     "vat_percent": "15.00",
     "low_stock_threshold": 5,
     "currency_symbol": "৳",
@@ -1264,18 +1552,18 @@ Response Payload JSON:
 }
 ```
 
-Use `multipart/form-data` when uploading `shop_logo`. Required: `vat_percent`, `low_stock_threshold`, `currency_symbol`, `invoice_type` (`standard`|`thermal`). Logo optional; allowed upload types png/jpg/jpeg/webp/gif, max 2 MB. Uploaded images are compressed and stored as **WebP (quality 90%)**.
+Use `multipart/form-data` when uploading `business_logo`. Required: `vat_percent`, `low_stock_threshold`, `currency_symbol`, `invoice_type` (`standard`|`thermal`). Logo optional; allowed upload types png/jpg/jpeg/webp/gif, max 2 MB. Uploaded images are compressed and stored as **WebP (quality 90%)**. `business_phone` max length is **18** characters.
 
-API Name: Update Shop Settings (JSON)
-API End Point: `PUT /api/shop-settings`
+API Name: Update Business Settings (JSON)
+API End Point: `PUT /api/business-settings`
 Request Payload JSON:
 
 ```JSON
 {
-  "shop_name": "Stockbin Shop Updated",
-  "shop_email": "shop@example.com",
-  "shop_phone": "01700000000",
-  "shop_address": "Dhaka",
+  "business_name": "Stockbin Business Updated",
+  "business_email": "business@example.com",
+  "business_phone": "01700000000",
+  "business_address": "Dhaka",
   "vat_percent": 15,
   "low_stock_threshold": 5,
   "currency_symbol": "৳",
@@ -1288,15 +1576,15 @@ Response Payload JSON:
 ```JSON
 {
   "success": true,
-  "message": "Shop settings updated successfully.",
+  "message": "Business settings updated successfully.",
   "data": {
     "id": 1,
     "tenant_id": 1,
-    "shop_logo": "https://example.com/storage/shop-logos/logo.webp",
-    "shop_name": "Stockbin Shop Updated",
-    "shop_email": "shop@example.com",
-    "shop_phone": "01700000000",
-    "shop_address": "Dhaka",
+    "business_logo": "https://example.com/storage/business-logos/logo.webp",
+    "business_name": "Stockbin Business Updated",
+    "business_email": "business@example.com",
+    "business_phone": "01700000000",
+    "business_address": "Dhaka",
     "vat_percent": "15.00",
     "low_stock_threshold": 5,
     "currency_symbol": "৳",
@@ -1306,17 +1594,17 @@ Response Payload JSON:
 }
 ```
 
-API Name: Update Shop Settings (Multipart)
-API End Point: `POST /api/shop-settings/update`
+API Name: Update Business Settings (Multipart)
+API End Point: `POST /api/business-settings/update`
 Request Payload JSON:
 
 ```JSON
 {
-  "shop_logo": "<file>",
-  "shop_name": "Stockbin Shop Updated",
-  "shop_email": "shop@example.com",
-  "shop_phone": "01700000000",
-  "shop_address": "Dhaka",
+  "business_logo": "<file>",
+  "business_name": "Stockbin Business Updated",
+  "business_email": "business@example.com",
+  "business_phone": "01700000000",
+  "business_address": "Dhaka",
   "vat_percent": 15,
   "low_stock_threshold": 5,
   "currency_symbol": "৳",
@@ -1329,15 +1617,15 @@ Response Payload JSON:
 ```JSON
 {
   "success": true,
-  "message": "Shop settings updated successfully.",
+  "message": "Business settings updated successfully.",
   "data": {
     "id": 1,
     "tenant_id": 1,
-    "shop_logo": "https://example.com/storage/shop-logos/logo.webp",
-    "shop_name": "Stockbin Shop Updated",
-    "shop_email": "shop@example.com",
-    "shop_phone": "01700000000",
-    "shop_address": "Dhaka",
+    "business_logo": "https://example.com/storage/business-logos/logo.webp",
+    "business_name": "Stockbin Business Updated",
+    "business_email": "business@example.com",
+    "business_phone": "01700000000",
+    "business_address": "Dhaka",
     "vat_percent": "15.00",
     "low_stock_threshold": 5,
     "currency_symbol": "৳",
@@ -1347,7 +1635,7 @@ Response Payload JSON:
 }
 ```
 
-Use `multipart/form-data` for this alternate update path when uploading a logo.
+Use `multipart/form-data` for this alternate update path when uploading a logo. `business_phone` max length is **18** characters.
 
 ---
 
@@ -2375,7 +2663,7 @@ Response Payload JSON:
 }
 ```
 
-Use JSON without an image, or `multipart/form-data` when uploading `product_image` (optional; png/jpg/jpeg/webp/gif, max 2 MB). Uploaded images are compressed and stored as **WebP (quality 90%)**. `product_code` is assigned automatically (`PRD-0001`, then `PRD-0002`, …).
+Use JSON without an image, or `multipart/form-data` when uploading `product_image` (optional; png/jpg/jpeg/webp/gif, max 2 MB). Uploaded images are compressed and stored as **WebP (quality 90%)**. `product_code` is assigned automatically (`PRD-0001`, then `PRD-0002`, …). `price` is **required** and must be **greater than 0** (empty/`0` rejected).
 
 API Name: Sort Products
 API End Point: `PUT /api/products/sort`
@@ -2466,7 +2754,7 @@ Response Payload JSON:
 }
 ```
 
-`product_code` cannot be changed on update (omit it from the request).
+`product_code` cannot be changed on update (omit it from the request). When `price` is sent, it must be **greater than 0** (`0` / `null` rejected).
 
 API Name: Update Product (Multipart)
 API End Point: `POST /api/products/{product_id}/update`
@@ -2618,7 +2906,7 @@ Response Payload JSON:
 }
 ```
 
-Alert-screen list: same summary shape as `GET /api/product-stocks` (including `category_id` and `category_name`), but only products where summed `remaining_qty <= low_stock_threshold` (including products with no stock batches / `remaining_qty = 0`). Ordered by lowest `remaining_qty` first. Threshold comes from shop settings (defaults to `0` when settings are missing). Every row has `stock_alert: true`. No pagination.
+Alert-screen list: same summary shape as `GET /api/product-stocks` (including `category_id` and `category_name`), but only **active** products that have at least one stock batch and summed `remaining_qty <= low_stock_threshold`. Inactive products and products that were never stocked are excluded (sold-out active products with batches and `remaining_qty = 0` still appear). Ordered by lowest `remaining_qty` first. Threshold comes from business settings (defaults to `0` when settings are missing). Every row has `stock_alert: true`. No pagination.
 
 API Name: Create Product Stock Batch
 API End Point: `POST /api/product-stocks`
@@ -2667,7 +2955,7 @@ Response Payload JSON:
 }
 ```
 
-Required: `product_id`, `purchase_unit_cost`, `qty`, `stock_date`. `qty` is an integer with minimum `0`. Product must belong to the tenant. Do not send `remaining_qty`; the backend always sets `remaining_qty = qty`. Later completed sales decrease `remaining_qty`, and return restocks increase it. Nested `product` includes `category_id` and `category_name`. `is_used` is `false` for newly created batches.
+Required: `product_id`, `purchase_unit_cost`, `qty`, `stock_date`. `purchase_unit_cost` must be **greater than 0** (empty/`0` rejected). `qty` is an integer with minimum `0`. Product must belong to the tenant. Do not send `remaining_qty`; the backend always sets `remaining_qty = qty`. Later completed sales decrease `remaining_qty`, and return restocks increase it. Nested `product` includes `category_id` and `category_name`. `is_used` is `false` for newly created batches.
 
 API Name: List Product Stock History
 API End Point: `GET /api/product-stock-history?product_id=1&period=last_100_records`
@@ -2769,7 +3057,7 @@ Response Payload JSON:
 }
 ```
 
-Update is allowed only while this stock batch has never been used in a sale. Do not send `remaining_qty`; when `qty` is updated, the backend sets `remaining_qty = qty`. Nested `product` includes `category_id` and `category_name`. `is_used` is always `false` on successful update responses (used batches cannot be updated).
+Update is allowed only while this stock batch has never been used in a sale. Do not send `remaining_qty`; when `qty` is updated, the backend sets `remaining_qty = qty`. When `purchase_unit_cost` is sent, it must be **greater than 0** (`0` / `null` rejected). Nested `product` includes `category_id` and `category_name`. `is_used` is always `false` on successful update responses (used batches cannot be updated).
 
 API Name: Delete Product Stock Batch
 API End Point: `DELETE /api/product-stocks/{product_stock_id}`
@@ -2799,6 +3087,16 @@ Delete is allowed only while this stock batch has never been used in a sale.
 ## Customers
 
 `customer_phone` is exact-string unique per tenant. No phone normalization is performed (`01712345678` and `+8801712345678` are different values). Totals are managed by the backend. `created_by` / `updated_by` return related user names (or `null`).
+
+Customer ledger fields (rebuilt from source on invoice complete, payment, and return):
+
+
+| Field        | Source                                                                     |
+| ------------ | -------------------------------------------------------------------------- |
+| `total_sale` | `Σ (grand_total − return_amount)` across `completed` / `returned` invoices |
+| `total_paid` | net payments minus return cash refunds                                     |
+| `total_due`  | `Σ due_amount` across `completed` / `returned` invoices                    |
+
 
 API Name: List Customers
 API End Point: `GET /api/customers?period=last_100_records`
@@ -3026,7 +3324,7 @@ Results are ordered by newest `payment_date` first. `created_by` and `updated_by
 
 ## Customer Payments
 
-Every payment must be linked to a sale invoice. Required on create: `customer_id` and `sale_invoice_id`. The customer and invoice must belong to the authenticated tenant. The invoice must belong to that same customer, and its `invoice_status` must be `completed` or `returned`. Creating a payment requires the invoice to have remaining due (`grand_total - return_amount - net paid > 0`, where net paid = payments minus return cash refunds), and `amount` must not exceed that invoice due. Create/update/delete recalculates invoice `paid_amount` / `due_amount` / `payment_status` and customer `total_paid` / `total_due` transactionally (`paid_amount` and `total_paid` = net payments minus return cash refunds; `total_due` = sum of invoice `due_amount` for `completed` / `returned` invoices); customer `total_sale` is not changed by payment APIs. `customer_id` and `sale_invoice_id` are immutable on update. `created_by`, `updated_by`, and `tenant_id` come from the backend.
+Every payment must be linked to a sale invoice. Required on create: `customer_id` and `sale_invoice_id`. The customer and invoice must belong to the authenticated tenant. The invoice must belong to that same customer, and its `invoice_status` must be `completed` or `returned`. Creating a payment requires the invoice to have remaining due (`grand_total - return_amount - net paid > 0`, where net paid = payments minus return cash refunds), and `amount` must not exceed that invoice due. Create/update/delete recalculates invoice `paid_amount` / `due_amount` / `payment_status` and rebuilds customer ledger fields from source (`total_sale` = `Σ (grand_total − return_amount)` for `completed` / `returned` invoices; `total_paid` = net payments minus return cash refunds; `total_due` = sum of invoice `due_amount` for `completed` / `returned` invoices). Payment amount itself does not increment/decrement `total_sale`. `customer_id` and `sale_invoice_id` are immutable on update. `created_by`, `updated_by`, and `tenant_id` come from the backend.
 
 API Name: Create Customer Payment
 API End Point: `POST /api/customer-payments`
@@ -3157,30 +3455,47 @@ Response Payload JSON:
 
 Mobile uses a **single** invoice list + details API (drafts stay on dedicated draft endpoints for POS).
 
-| Action | Endpoint |
-| --- | ---- |
-| List (non-draft) | `GET /api/sale-invoices?period=last_100_records&filter=&search=&from_date=&to_date=` |
-| Details | `GET /api/sale-invoices/{sale_invoice_id}` |
-| PDF download | `GET /api/sale-invoices/{sale_invoice_id}/pdf` |
-| PDF stream | `GET /api/sale-invoices/{sale_invoice_id}/pdf/stream` |
-| Draft list | `GET /api/sale-invoices/draft` |
-| Draft show / update / complete / delete | `/api/sale-invoices/draft/{id}` … |
+`payment_status` values:
+
+
+| Status    | Meaning                                                                                             |
+| --------- | --------------------------------------------------------------------------------------------------- |
+| `unpaid`  | `paid_amount = 0` and `due_amount > 0`                                                              |
+| `partial` | `paid_amount > 0` and `due_amount > 0`                                                              |
+| `paid`    | `due_amount = 0` and `paid_amount > 0` (cash was collected)                                         |
+| `settled` | `due_amount = 0` and `paid_amount = 0` (due cleared by return credit / net zero; no cash collected) |
+
+
+
+| Action                                  | Endpoint                                                                             |
+| --------------------------------------- | ------------------------------------------------------------------------------------ |
+| List (non-draft)                        | `GET /api/sale-invoices?period=last_100_records&filter=&search=&from_date=&to_date=` |
+| Details                                 | `GET /api/sale-invoices/{sale_invoice_id}`                                           |
+| PDF download                            | `GET /api/sale-invoices/{sale_invoice_id}/pdf`                                       |
+| PDF stream                              | `GET /api/sale-invoices/{sale_invoice_id}/pdf/stream`                                |
+| Draft list                              | `GET /api/sale-invoices/draft`                                                       |
+| Draft show / update / complete / delete | `/api/sale-invoices/draft/{id}` …                                                    |
+
+
+
 
 ### List filters (`filter`)
 
-| `filter` | Scope |
-| --- | ---- |
-| _(omit / empty)_ | All non-draft invoices |
-| `due` | `due_amount > 0` |
-| `paid` | `payment_status = paid` |
-| `return` | Any line with `restocked_qty > 0` |
-| `wastage` | Any line with `wastage_qty > 0` |
+
+| `filter`         | Scope                                                             |
+| ---------------- | ----------------------------------------------------------------- |
+| *(omit / empty)* | All non-draft invoices                                            |
+| `due`            | `due_amount > 0`                                                  |
+| `paid`           | `payment_status = paid` only (cash-collected; excludes `settled`) |
+| `return`         | Any line with `restocked_qty > 0`                                 |
+| `wastage`        | Any line with `wastage_qty > 0`                                   |
+
 
 List returns invoice headers with nested customer only (no line items). Each row includes badge fields:
 
 - `total_restocked_qty` — sum of line restocked qty (show as `{n} Return`)
 - `total_wastage_qty` — sum of line wastage qty (show as `{n} Wastage`)
-- `due_amount` / `payment_status` — Due / Paid badges
+- `due_amount` / `payment_status` — Due / Paid / Settled badges
 
 Filtering uses `invoice_date` for period windows, with “today” from `X-Timezone`. List rows are ordered by newest `created_at` first. `created_by` / `updated_by` return related user names (or `null`). Details return the full invoice (items, product, FIFO `stock_layers`). Draft show (`GET /api/sale-invoices/draft/{id}`) only returns invoices with `invoice_status = draft`.
 
@@ -3334,10 +3649,12 @@ Same response shape as create. Nested `product` includes `category_name`, `produ
 
 PDF mirrors **invoice details** (same tenant-scoped show data): header, customer, line items, payment totals, and return/wastage qty. Works for `draft`, `completed`, and `returned`. Template follows shop setting `invoice_type`:
 
-| `invoice_type` | Template | Paper |
-| --- | --- | --- |
-| `standard` (default) | A4 layout | A4 portrait |
-| `thermal` | Receipt layout | ~80mm thermal |
+
+| `invoice_type`       | Template       | Paper         |
+| -------------------- | -------------- | ------------- |
+| `standard` (default) | A4 layout      | A4 portrait   |
+| `thermal`            | Receipt layout | ~80mm thermal |
+
 
 Response is **binary PDF** (`Content-Type: application/pdf`), not the JSON envelope. Send `Authorization: Bearer {{token}}`. Filename: `Invoice-{invoice_no}.pdf`.
 
@@ -3369,6 +3686,8 @@ PDF contents (details-aligned):
 - Badges when > 0: `total_restocked_qty`, `total_wastage_qty`
 - Lines: product, `sold_qty`, `sale_unit_price`, `sale_line_total`, plus `returned_qty` / `restocked_qty` / `wastage_qty`
 - Summary: subtotal, discount, VAT, grand total, paid, due, `return_amount` (when > 0)
+
+
 
 ### Draft list
 
@@ -3515,13 +3834,15 @@ Create a draft or completed sale invoice. `invoice_no` is generated by the backe
 - `paid_amount` must be `0` (no payment on draft)
 - Customer ledger (`total_sale` / `total_due`) is not updated
 
+
+
 ### Completed (`invoice_status: "completed"`)
 
 - Products must belong to the tenant and be active
-- FIFO stock is allocated from earliest `stock_date` (then `id`); insufficient stock fails validation
+- FIFO stock is allocated from earliest `stock_date` (then `id`) among batches with `stock_date <= invoice_date`; insufficient stock fails validation
 - Each allocation is stored as a stock layer with `product_stock_id`, `purchase_unit_cost`, and `sold_qty`
-- With `paid_amount > 0`: backend creates a mandatory linked customer payment for that invoice (`payment_method` required); invoice and customer balances sync through that payment
-- With `paid_amount = 0`: invoice starts unpaid; customer `total_sale` increases by `grand_total` and `total_due` is recalculated; no payment record
+- With `paid_amount > 0`: backend creates a mandatory linked customer payment for that invoice (`payment_method` required); invoice and customer balances sync through that payment (ledger rebuild includes `total_sale`)
+- With `paid_amount = 0`: invoice starts unpaid; customer ledger is rebuilt (`total_sale` = `Σ (grand_total − return_amount)`, `total_due` recalculated); no payment record
 
 `created_by`, `updated_by`, `tenant_id`, and computed monetary fields come from the backend.
 
@@ -3659,6 +3980,8 @@ Response Payload JSON:
       "total_returned_qty": 1,
       "total_restocked_qty": 1,
       "total_wastage_qty": 0,
+      "return_value": "593.25",
+      "due_adjustment": "593.25",
       "refund_amount": "0.00",
       "reason": "Damaged item",
       "note": "Customer returned one unit",
@@ -3692,7 +4015,7 @@ Optional query: `period` / `from_date` / `to_date`, `search` (return no, invoice
 - `last_90_days`: today and the previous 89 calendar days
 - `custom`: inclusive `from_date` through `to_date`, maximum 120 days
 
-No pagination. List always scopes to restock-only returns (`total_restocked_qty > 0` and `total_wastage_qty = 0`), including search. List responses omit `items` (and omit computed `return_value` / `due_adjustment`, which appear only on create).
+No pagination. List always scopes to restock-only returns (`total_restocked_qty > 0` and `total_wastage_qty = 0`), including search. List responses omit `items`. `return_value` and `due_adjustment` are always present (persisted).
 
 API Name: Show Sale Return
 API End Point: `GET /api/sale-returns/{sale_return_id}`
@@ -3717,6 +4040,8 @@ Response Payload JSON:
     "total_returned_qty": 1,
     "total_restocked_qty": 1,
     "total_wastage_qty": 0,
+    "return_value": "593.25",
+    "due_adjustment": "593.25",
     "refund_amount": "0.00",
     "reason": "Damaged item",
     "note": "Customer returned one unit",
@@ -3744,7 +4069,7 @@ Response Payload JSON:
         "returned_qty": 1,
         "restocked_qty": 1,
         "wastage_qty": 0,
-        "refund_amount": "593.25",
+        "return_credit_amount": "593.25",
         "reason": "Size mismatch",
         "product": {
           "id": 1,
@@ -3764,7 +4089,7 @@ Response Payload JSON:
 }
 ```
 
-Same restock-only scope as the list. Wastage-only, missing, or cross-tenant ids fail. Includes `items` with nested `product` (`product_code`, `product_name`, `category_name`, `product_image`, `unit`, `color`, `size`, `weight`); omits create-only `return_value` / `due_adjustment` / `companion_returns` / `total_refund_amount`.
+Same restock-only scope as the list. Wastage-only, missing, or cross-tenant ids fail. Includes `items` with nested `product` (`product_code`, `product_name`, `category_name`, `product_image`, `unit`, `color`, `size`, `weight`). `return_value` and `due_adjustment` are always present; create-only extras remain `companion_returns` / `total_refund_amount`. Item `return_credit_amount` is the merchandise return-credit share (sums toward header `return_value`); header `refund_amount` remains cash-only.
 
 Create a return (restock and/or wastage) against a completed or already-returned sale invoice. Only invoices belonging to the authenticated tenant are accepted. Each return item must reference a distinct `sale_invoice_item_id` on that invoice. `returned_qty` must equal `restocked_qty + wastage_qty`, must be at least `1`, and must not exceed the item’s remaining returnable quantity (`sold_qty − returned_qty`).
 
@@ -3783,7 +4108,7 @@ Return value is computed proportionally by the backend (not client-supplied):
 
 Settlement:
 
-- Due-first on the combined request — `due_adjustment = min(invoice.due_amount, return_value)`, cash refund = remainder; then each split restock/wastage record receives a proportional share of `return_value`, `due_adjustment`, and `refund_amount`. Customer `total_sale` decreases by combined `return_value`; invoice `paid_amount` and customer `total_paid` are net of cash refunds (`sum(payments) − sum(return refund_amount)`); `total_due` is the sum of `due_amount` across the customer’s `completed` / `returned` invoices (same source as invoice-level due)
+- Due-first on the combined request — `due_adjustment = min(invoice.due_amount, return_value)`, cash refund = remainder; then each split restock/wastage record receives a proportional share of `return_value`, `due_adjustment`, and `refund_amount`. Customer ledger is rebuilt after the return (`total_sale` = `Σ (grand_total − return_amount)` for `completed` / `returned` invoices); invoice `paid_amount` and customer `total_paid` are net of cash refunds (`sum(payments) − sum(return refund_amount)`); `total_due` is the sum of `due_amount` across the customer’s `completed` / `returned` invoices (same source as invoice-level due)
 
 Stock:
 
@@ -3791,7 +4116,7 @@ Stock:
 - Wastage quantities do not restock
 - Layer allocation follows original FIFO order (earliest stock date first)
 
-The invoice’s `return_amount` increases by `return_value`, `due_amount` decreases by `due_adjustment`, `payment_status` is recalculated, and `invoice_status` becomes `returned` only when every line is fully returned; otherwise it stays `completed`. `return_no` is generated by the backend (`RET-YYYYMMDD-####`) for each split record.
+The invoice’s `return_amount` increases by `return_value`, `due_amount` decreases by `due_adjustment`, `payment_status` is recalculated (`paid` when due is cleared and cash was collected; `settled` when due is cleared with `paid_amount = 0` via return credit only), and `invoice_status` becomes `returned` only when every line is fully returned; otherwise it stays `completed`. `return_no` is generated by the backend (`RET-YYYYMMDD-####`) for each split record.
 
 API Name: Create Sale Return
 API End Point: `POST /api/sale-invoices/{sale_invoice_id}/returns`
@@ -3859,7 +4184,7 @@ Response Payload JSON:
         "returned_qty": 1,
         "restocked_qty": 1,
         "wastage_qty": 0,
-        "refund_amount": "593.25",
+        "return_credit_amount": "593.25",
         "reason": "Size mismatch",
         "product": {
           "id": 1,
@@ -3878,6 +4203,8 @@ Response Payload JSON:
   "errors": "No Errors"
 }
 ```
+
+
 
 ## Sale Wastages
 
@@ -3909,6 +4236,8 @@ Response Payload JSON:
       "total_returned_qty": 1,
       "total_restocked_qty": 0,
       "total_wastage_qty": 1,
+      "return_value": "593.25",
+      "due_adjustment": "593.25",
       "refund_amount": "0.00",
       "reason": "Damaged beyond repair",
       "note": "Disposed as wastage",
@@ -3933,7 +4262,7 @@ Response Payload JSON:
 }
 ```
 
-Optional query: `period` / `from_date` / `to_date`, `search` (return no, invoice no, customer name, or phone). No `sort`/`order` — results are always ordered by newest `created_at` first. Same period and search rules as sale returns. List always scopes to wastage-only (`total_wastage_qty > 0` and `total_restocked_qty = 0`). List responses omit `items` and create-only `return_value` / `due_adjustment`.
+Optional query: `period` / `from_date` / `to_date`, `search` (return no, invoice no, customer name, or phone). No `sort`/`order` — results are always ordered by newest `created_at` first. Same period and search rules as sale returns. List always scopes to wastage-only (`total_wastage_qty > 0` and `total_restocked_qty = 0`). List responses omit `items`. `return_value` and `due_adjustment` are always present (persisted).
 
 API Name: Show Sale Wastage
 API End Point: `GET /api/sale-wastages/{sale_wastage_id}`
@@ -3958,6 +4287,8 @@ Response Payload JSON:
     "total_returned_qty": 1,
     "total_restocked_qty": 0,
     "total_wastage_qty": 1,
+    "return_value": "593.25",
+    "due_adjustment": "593.25",
     "refund_amount": "0.00",
     "reason": "Damaged beyond repair",
     "note": "Disposed as wastage",
@@ -3985,7 +4316,7 @@ Response Payload JSON:
         "returned_qty": 1,
         "restocked_qty": 0,
         "wastage_qty": 1,
-        "refund_amount": "593.25",
+        "return_credit_amount": "593.25",
         "reason": "Broken",
         "product": {
           "id": 1,
@@ -4005,4 +4336,4 @@ Response Payload JSON:
 }
 ```
 
-Same wastage-only scope as the list. Mixed, restock-only, missing, or cross-tenant ids fail. Includes `items` with nested `product` (`product_code`, `product_name`, `category_name`, `product_image`, `unit`, `color`, `size`, `weight`); omits create-only `return_value` / `due_adjustment`.
+Same wastage-only scope as the list. Mixed, restock-only, missing, or cross-tenant ids fail. Includes `items` with nested `product` (`product_code`, `product_name`, `category_name`, `product_image`, `unit`, `color`, `size`, `weight`). `return_value` and `due_adjustment` are always present; create-only extras remain `companion_returns` / `total_refund_amount`.

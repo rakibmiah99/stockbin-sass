@@ -1,0 +1,431 @@
+x```txt
+ Build this project using Next.js App Router and Laravel API.
+
+ Project Goal
+ ------------
+
+ Create a modern, clean, responsive, and production-ready dashboard application.
+
+ The UI and UX should remain consistent across the entire application. Every page, component, spacing, typography, colors, border radius, shadows, animations, icons, tables, forms, and layouts must follow the existing design system.
+
+ Never redesign existing pages unless requested.
+
+ Always extend the current design language.
+
+ The application should look like it was designed by a single designer.
+
+ Architecture Rules
+ ------------------
+
+ - Keep the project simple, clean, and easy to maintain.
+ - Do not over-engineer.
+ - Do not use Repository Pattern.
+ - Do not use Service Classes.
+ - Do not use DTO.
+ - Do not use CQRS.
+ - Do not use Domain Driven Design.
+ - Do not create unnecessary abstractions.
+ - Follow a straightforward feature-based architecture.
+ - Write readable and maintainable code.
+ - Prefer clarity over cleverness.
+
+ Backend
+ -------
+
+ Laravel is the backend.
+
+ Laravel is responsible for:
+
+ - Authentication
+ - Authorization
+ - Validation
+ - Business Logic
+ - Database
+ - API Response
+
+ Next.js should only consume Laravel APIs.
+
+ Never duplicate backend business logic inside Next.js.
+
+ Frontend
+ --------
+
+ Use:
+
+ - Next.js App Router
+ - TypeScript
+ - Server Components by default
+ - Client Components only when necessary
+
+ Examples of Client Components:
+
+ - Forms
+ - Dropdowns
+ - Modals
+ - Tabs
+ - Interactive tables
+ - Search inputs
+ - File uploads
+
+ Everything else should remain Server Components whenever possible.
+
+ Data Fetching
+ -------------
+
+ All page data must be fetched on the server.
+
+ Never fetch page data inside useEffect unless absolutely necessary.
+
+ Prefer:
+
+ Page
+ ↓
+
+ Server API Call
+ ↓
+
+ Render
+
+ instead of
+
+ Page
+ ↓
+
+ useEffect()
+ ↓
+
+ Loading
+ ↓
+
+ Render
+
+ API Layer
+ ---------
+
+ Create one API file for each module.
+
+ Example
+
+ lib/api/
+
+ auth.ts
+
+ dashboard.ts
+
+ products.ts
+
+ categories.ts
+
+ customers.ts
+
+ suppliers.ts
+
+ users.ts
+
+ settings.ts
+
+ reports.ts
+
+ Each file should only contain API requests.
+
+ Example
+
+ productsApi.list()
+
+ productsApi.get()
+
+ productsApi.store()
+
+ productsApi.update()
+
+ productsApi.delete()
+
+ Never place fetch logic inside components.
+
+ Authentication
+ --------------
+
+ Use Cookie Authentication.
+
+ Authentication helpers should be inside
+
+ lib/auth/
+
+ Example
+
+ cookies.ts
+
+ constants.ts
+
+ permissions.ts
+
+ Use proxy.ts to protect routes.
+
+ Layouts
+ -------
+
+ Use separate layouts.
+
+ app/
+
+ (auth)/layout.tsx
+
+ (dashboard)/layout.tsx
+
+ Dashboard layout should contain
+
+ - Sidebar
+ - Topbar
+ - Main Content
+ - Breadcrumb (when needed)
+
+ The layout should remain identical throughout the application.
+
+ Do not redesign layout per page.
+
+ Components
+ ----------
+
+ Organize components by feature.
+
+ Example
+
+ components/
+
+ layout/
+     Sidebar.tsx
+     Topbar.tsx
+     Breadcrumb.tsx
+     PageHeader.tsx
+
+ ui/
+     Button.tsx
+     Input.tsx
+     Select.tsx
+     Textarea.tsx
+     Checkbox.tsx
+     Modal.tsx
+     Card.tsx
+     Table.tsx
+     Badge.tsx
+     Pagination.tsx
+     Loader.tsx
+     EmptyState.tsx
+     ConfirmDialog.tsx
+
+ products/
+     ProductForm.tsx
+     ProductTable.tsx
+     ProductCard.tsx
+     DeleteProductButton.tsx
+
+ categories/
+
+ customers/
+
+ suppliers/
+
+ users/
+
+ settings/
+
+ reports/
+
+ Components should remain
+
+ - Small
+ - Reusable
+ - Independent
+ - Easy to understand
+
+ Types
+ -----
+
+ Keep every interface inside
+
+ types/
+
+ Example
+
+ Api.ts
+
+ Auth.ts
+
+ User.ts
+
+ Product.ts
+
+ Category.ts
+
+ Customer.ts
+
+ Supplier.ts
+
+ Report.ts
+
+ Dashboard.ts
+
+ Settings.ts
+
+ Never declare large interfaces inside pages or components.
+
+ Server Actions
+ --------------
+
+ Use Server Actions for
+
+ - Login
+ - Logout
+ - Store
+ - Update
+ - Delete
+
+ Example
+
+ actions/
+
+ auth.ts
+
+ products.ts
+
+ categories.ts
+
+ customers.ts
+
+ suppliers.ts
+
+ users.ts
+
+ settings.ts
+
+ reports.ts
+
+ A Server Action should
+
+ - Receive FormData
+ - Call Laravel API
+ - Handle API errors
+ - Redirect when necessary
+ - Revalidate affected pages
+
+ Pages
+ -----
+
+ A page should only
+
+ - Fetch data
+ - Pass props
+ - Render components
+
+ Never place business logic inside pages.
+
+ Validation
+ ----------
+
+ Laravel performs all validation.
+
+ Next.js should only display validation errors returned by Laravel.
+
+ Never duplicate validation rules.
+
+ Folder Structure
+ ----------------
+
+ src/
+
+ app/
+
+ components/
+
+ actions/
+
+ lib/
+
+ types/
+
+ styles/
+
+ proxy.ts
+
+ Design System
+ -------------
+
+ Maintain the existing design exactly.
+
+ When creating new pages or components:
+
+ - Follow the existing theme.
+ - Follow existing spacing.
+ - Follow existing typography.
+ - Follow existing border radius.
+ - Follow existing shadows.
+ - Follow existing icon style.
+ - Follow existing button style.
+ - Follow existing card style.
+ - Follow existing table style.
+ - Follow existing form style.
+ - Follow existing modal style.
+ - Follow existing input style.
+ - Follow existing colors.
+ - Follow existing hover effects.
+ - Follow existing focus states.
+ - Follow existing transitions.
+ - Follow existing animations.
+
+ Never introduce a different design language.
+
+ Every new page should feel like it already existed in the project.
+
+ Responsive Design
+ -----------------
+
+ Every page must work on
+
+ - Mobile
+ - Tablet
+ - Laptop
+ - Desktop
+
+ Never break the layout.
+
+ Tables should support horizontal scrolling on smaller devices.
+
+ Forms should stack properly on mobile.
+
+ UI Consistency
+ --------------
+
+ Always reuse existing UI components.
+
+ If a Button component already exists,
+ never create another button.
+
+ If a Table component already exists,
+ reuse it.
+
+ If an Input component already exists,
+ reuse it.
+
+ Avoid duplicated UI.
+
+ Coding Style
+ ------------
+
+ - Keep files small.
+ - Prefer reusable components.
+ - Prefer composition over large components.
+ - Avoid files larger than 300–400 lines whenever possible.
+ - Use descriptive names.
+ - Remove dead code.
+ - Avoid duplicated logic.
+ - Keep API logic outside components.
+ - Keep UI separate from API logic.
+ - Keep types separate from components.
+ - Use TypeScript strictly.
+ - Write clean, readable code.
+
+ Goal
+ ----
+
+ Build a clean, modern, responsive, maintainable Laravel + Next.js dashboard application that follows the existing project architecture and design system. Every new feature, page, and component should integrate seamlessly with the current UI so that the entire application feels consistent, polished, and built as a single cohesive product.
+ ```

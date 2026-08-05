@@ -1,46 +1,28 @@
-import { cache } from "react";
-import { apiRequest } from "./client";
-import {AuthUserType, LoginResultType, RegisterResultType} from "@/types/AuthType";
+import { apiFetch } from './client'
+import type { AuthSession } from '@/types/Auth'
 
 export const authApi = {
-  register: (name: string, email: string, password: string, passwordConfirmation: string) =>
-    apiRequest<RegisterResultType>("/auth/register", {
-      method: "POST",
-      body: { name, email, password, password_confirmation: passwordConfirmation },
-    }),
+  register(payload: { name: string; email: string; password: string; password_confirmation: string }) {
+    return apiFetch<AuthSession>('/api/auth/register', { method: 'POST', body: payload })
+  },
 
-  login: (email: string, password: string) =>
-    apiRequest<LoginResultType>("/auth/login", {
-      method: "POST",
-      body: { email, password },
-    }),
+  login(payload: { email: string; password: string }) {
+    return apiFetch<AuthSession>('/api/auth/login', { method: 'POST', body: payload })
+  },
 
-  forgotPassword: (email: string) =>
-    apiRequest<null>("/auth/forgot-password", {
-      method: "POST",
-      body: { email },
-    }),
+  forgotPassword(payload: { email: string }) {
+    return apiFetch<null>('/api/auth/forgot-password', { method: 'POST', body: payload })
+  },
 
-  verifyOtp: (email: string, otp: string) =>
-    apiRequest<null>("/auth/verify-otp", {
-      method: "POST",
-      body: { email, otp },
-    }),
+  verifyOtp(payload: { email: string; otp: string }) {
+    return apiFetch<null>('/api/auth/verify-otp', { method: 'POST', body: payload })
+  },
 
-  resetPassword: (email: string, otp: string, password: string, passwordConfirmation: string) =>
-    apiRequest<null>("/auth/reset-password", {
-      method: "POST",
-      body: { email, otp, password, password_confirmation: passwordConfirmation },
-    }),
+  resetPassword(payload: { email: string; otp: string; password: string; password_confirmation: string }) {
+    return apiFetch<null>('/api/auth/reset-password', { method: 'POST', body: payload })
+  },
 
-  logout: (token: string) =>
-    apiRequest<null>("/auth/logout", {
-      method: "POST",
-      body: {},
-      token,
-    }),
-
-  // Cached per request so a layout + page that both need the current user (e.g. for an
-  // admin-only gate) share one call instead of racing two independent fetches to /user.
-  me: cache((token: string) => apiRequest<AuthUserType>("/user", { token })),
-};
+  logout() {
+    return apiFetch<null>('/api/auth/logout', { method: 'POST', body: {} })
+  },
+}

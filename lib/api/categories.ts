@@ -1,34 +1,24 @@
-import { apiRequest } from "./client";
-
-export interface Category {
-  id: number;
-  tenant_id: number;
-  name: string;
-  image: string | null;
-  sort_order: number;
-  total_product: number;
-}
-
-export interface CategoryPayload {
-  name: string;
-}
+import { apiFetch } from './client'
+import type { Category } from '@/types/Category'
 
 export const categoriesApi = {
-  list: (token: string) => apiRequest<Category[]>("/categories", { token }),
+  list() {
+    return apiFetch<Category[]>('/api/categories')
+  },
 
-  create: (token: string, payload: CategoryPayload) =>
-    apiRequest<Category>("/categories", { method: "POST", body: payload, token }),
+  create(formData: FormData) {
+    return apiFetch<Category>('/api/categories', { method: 'POST', body: formData })
+  },
 
-  /** Create with an `image` file — multipart/form-data on the same create endpoint. */
-  createWithImage: (token: string, formData: FormData) =>
-    apiRequest<Category>("/categories", { method: "POST", body: formData, token }),
+  update(id: number, formData: FormData) {
+    return apiFetch<Category>(`/api/categories/${id}/update`, { method: 'POST', body: formData })
+  },
 
-  update: (token: string, id: number, payload: CategoryPayload) =>
-    apiRequest<Category>(`/categories/${id}`, { method: "PUT", body: payload, token }),
+  remove(id: number) {
+    return apiFetch<null>(`/api/categories/${id}`, { method: 'DELETE' })
+  },
 
-  /** Update with an `image` file — dedicated multipart endpoint (PUT can't carry file uploads). */
-  updateWithImage: (token: string, id: number, formData: FormData) =>
-    apiRequest<Category>(`/categories/${id}/update`, { method: "POST", body: formData, token }),
-
-  remove: (token: string, id: number) => apiRequest<null>(`/categories/${id}`, { method: "DELETE", token }),
-};
+  sort(order: number[]) {
+    return apiFetch<Category[]>('/api/categories/sort', { method: 'PUT', body: { order } })
+  },
+}

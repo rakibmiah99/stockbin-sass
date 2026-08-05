@@ -1,41 +1,25 @@
-import { apiRequest } from "./client";
-import type { AuthUserType, UserRoleType } from "@/types/AuthType";
-
-export interface CreateUserPayload {
-  name: string;
-  email: string;
-  password: string;
-  password_confirmation: string;
-  role: UserRoleType;
-  is_active?: boolean;
-}
-
-export interface UpdateUserPayload {
-  name?: string;
-  email?: string;
-  role?: UserRoleType;
-  password?: string;
-  password_confirmation?: string;
-}
+import { apiFetch } from './client'
+import type { ManagedUser } from '@/types/User'
+import type { Role } from '@/types/Auth'
 
 export const usersApi = {
-  list: (token: string) => apiRequest<AuthUserType[]>("/users", { token }),
+  list() {
+    return apiFetch<ManagedUser[]>('/api/users')
+  },
 
-  get: (token: string, id: number) => apiRequest<AuthUserType>(`/users/${id}`, { token }),
+  create(payload: { name: string; email: string; password: string; password_confirmation: string; role: Role }) {
+    return apiFetch<ManagedUser>('/api/users', { method: 'POST', body: payload })
+  },
 
-  create: (token: string, payload: CreateUserPayload) =>
-    apiRequest<AuthUserType>("/users", { method: "POST", body: payload, token }),
+  update(id: number, payload: Record<string, unknown>) {
+    return apiFetch<ManagedUser>(`/api/users/${id}`, { method: 'PUT', body: payload })
+  },
 
-  update: (token: string, id: number, payload: UpdateUserPayload) =>
-    apiRequest<AuthUserType>(`/users/${id}`, { method: "PUT", body: payload, token }),
+  updateStatus(id: number, isActive: boolean) {
+    return apiFetch<ManagedUser>(`/api/users/${id}/status`, { method: 'PATCH', body: { is_active: isActive } })
+  },
 
-  updateStatus: (token: string, id: number, isActive: boolean) =>
-    apiRequest<AuthUserType>(`/users/${id}/status`, {
-      method: "PATCH",
-      body: { is_active: isActive },
-      token,
-    }),
-
-  remove: (token: string, id: number) =>
-    apiRequest<null>(`/users/${id}`, { method: "DELETE", token }),
-};
+  remove(id: number) {
+    return apiFetch<null>(`/api/users/${id}`, { method: 'DELETE' })
+  },
+}

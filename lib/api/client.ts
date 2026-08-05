@@ -1,76 +1,42 @@
-const API_BASE_URL = "https://stockbin.app/api";
+import 'server-only'
+import { cookies } from 'next/headers'
+import type { ApiResponse } from '@/types/Api'
+import { getToken } from '@/lib/auth/cookies'
+import { TIMEZONE_COOKIE } from '@/lib/auth/constants'
 
-/** Shape of every Stockbin API response, per API_DOCUMENTATION.md. */
-interface Envelope<T> {
-  success: boolean;
-  message: string | null;
-  data: T;
-  errors: string | Record<string, string[]> | null;
-}
+const API_BASE_URL = process.env.API_BASE_URL
 
-export class ApiError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ApiError";
-  }
-}
+type ApiFetchInit = Omit<RequestInit, 'body'> & { body?: unknown }
 
-/** Thrown only for a real 401 — the token is missing/expired/invalid, not just a flaky request. */
-export class UnauthenticatedError extends ApiError {
-  constructor(message = "Unauthenticated.") {
-    super(message);
-    this.name = "UnauthenticatedError";
-  }
-}
-
-function formatErrors(errors: Envelope<unknown>["errors"]): string {
-  if (!errors) return "Something went wrong. Please try again.";
-  if (typeof errors === "string") return errors;
-  return Object.values(errors).flat().join(" ");
-}
-
-export interface ApiRequestOptions {
-  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-  /** A `FormData` body is sent as-is (multipart/form-data); anything else is JSON-encoded. */
-  body?: unknown;
-  /** Bearer token for protected routes; omit for public `/auth/*` endpoints. */
-  token?: string | null;
-}
-
-export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
-  const { method = "GET", body, token } = options;
-  const isFormData = body instanceof FormData;
-
-  let res: Response;
-  try {
-    res = await fetch(`${API_BASE_URL}${path}`, {
-      method,
-      headers: {
-        Accept: "application/json",
-        // Let fetch set the multipart boundary itself when sending FormData.
-        ...(isFormData ? {} : { "Content-Type": "application/json" }),
-        "X-Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: isFormData ? (body as FormData) : body !== undefined ? JSON.stringify(body) : undefined,
-    });
-  } catch {
-    throw new ApiError("Couldn't reach the server. Check your connection and try again.");
+export async function apiFetch<T>(path: string, init: ApiFetchInit = {}): Promise<ApiResponse<T>> {
+  if (!API_BASE_URL) {
+    throw new Error('API_BASE_URL is not configured.')
   }
 
-  if (res.status === 401) {
-    throw new UnauthenticatedError();
+  const [token, cookieStore] = await Promise.all([getToken(), cookies()])
+  const timezone = cookieStore.get(TIMEZONE_COOKIE)?.value
+
+  const isFormData = init.body instanceof FormData
+
+  const headers = new Headers(init.headers)
+  headers.set('Accept', 'application/json')
+  if (init.body !== undefined && !isFormData) {
+    // FormData sets its own multipart Content-Type (with boundary) — leave it to fetch.
+    headers.set('Content-Type', 'application/json')
+  }
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+  if (timezone) {
+    headers.set('X-Timezone', timezone)
   }
 
-  let json: Envelope<T>;
-  try {
-    json = await res.json();
-  } catch {
-    throw new ApiError("Unexpected response from the server.");
-  }
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers,
+    body: init.body === undefined ? undefined : isFormData ? (init.body as FormData) : JSON.stringify(init.body),
+    cache: 'no-store',
+  })
 
-  if (!json.success) {
-    throw new ApiError(formatErrors(json.errors));
-  }
-  return json.data;
+  return response.json() as Promise<ApiResponse<T>>
 }

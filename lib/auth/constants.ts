@@ -1,3 +1,5 @@
-export const TOKEN_COOKIE = "stockbin_token";
-export const RESET_FLOW_COOKIE = "stockbin_reset_flow";
-export const SETUP_REQUIRED_COOKIE = "stockbin_setup_required";
+export const TOKEN_COOKIE = 'stockbin_token'
+
+export const TOKEN_COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
+
+export const TIMEZONE_COOKIE = 'tz'

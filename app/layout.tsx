@@ -1,25 +1,40 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "@/styles/globals.css";
+import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
+import { TimezoneSync } from "@/components/shared/TimezoneSync";
+import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Stockbin",
-  description: "Stockbin",
+  title: "ShopDash",
+  description: "Manage orders, products, and customers from one dashboard.",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-full flex flex-col">
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`try {
+            if (localStorage.getItem('theme') === 'dark') {
+              document.documentElement.classList.add('dark')
+            }
+          } catch (e) {}`}
+        </Script>
+        <TimezoneSync />
         {children}
       </body>
     </html>

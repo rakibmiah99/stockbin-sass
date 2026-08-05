@@ -1,7 +1,5 @@
-import { redirect } from "next/navigation";
-import { getAuthToken } from "@/lib/auth/cookies";
+import { redirect } from 'next/navigation'
 
-export default async function Home() {
-  const token = await getAuthToken();
-  redirect(token ? "/dashboard" : "/login");
+export default function RootPage() {
+  redirect('/login')
 }
