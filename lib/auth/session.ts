@@ -2,7 +2,7 @@ import 'server-only'
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { userApi } from '@/lib/api/user'
-import { getToken, clearToken } from './cookies'
+import { getToken } from './cookies'
 
 export const getCurrentUser = cache(async () => {
   const token = await getToken()
@@ -12,8 +12,7 @@ export const getCurrentUser = cache(async () => {
 
   const response = await userApi.me()
   if (!response.success) {
-    await clearToken()
-    redirect('/login')
+    redirect('/api/auth/session-expired')
   }
 
   return response.data
