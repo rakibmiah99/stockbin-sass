@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { formatMoney } from '@/lib/format'
-import { Button } from '@/components/ui/Button'
+import { Button, LinkButton } from '@/components/ui/Button'
 import { ProductFormModal } from './ProductFormModal'
 import { DeleteProductButton } from './DeleteProductButton'
+import { AddStockModal } from '@/components/stocks/AddStockModal'
 import type { Product } from '@/types/Product'
 import type { Category } from '@/types/Category'
 import type { Color, Size, Weight, ProductUnit } from '@/types/Variant'
@@ -19,6 +20,7 @@ export function ProductsTable({ products, categories, colors, sizes, weights, un
   currencySymbol: string
 }) {
   const [modal, setModal] = useState<{ open: boolean; product: Product | null }>({ open: false, product: null })
+  const [stockModal, setStockModal] = useState<{ open: boolean; productId: number | null }>({ open: false, productId: null })
 
   return (
     <>
@@ -73,6 +75,8 @@ export function ProductsTable({ products, categories, colors, sizes, weights, un
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
                       <Button variant="link" onClick={() => setModal({ open: true, product: p })}>Edit</Button>
+                      <Button variant="link" onClick={() => setStockModal({ open: true, productId: p.id })}>Add stock</Button>
+                      <LinkButton variant="link" href={`/stocks/history?product_id=${p.id}`}>History</LinkButton>
                       <DeleteProductButton id={p.id} name={p.product_name} />
                     </div>
                   </td>
@@ -92,6 +96,13 @@ export function ProductsTable({ products, categories, colors, sizes, weights, un
         sizes={sizes}
         weights={weights}
         units={units}
+      />
+
+      <AddStockModal
+        open={stockModal.open}
+        products={products}
+        defaultProductId={stockModal.productId ?? undefined}
+        onClose={() => setStockModal({ open: false, productId: null })}
       />
     </>
   )

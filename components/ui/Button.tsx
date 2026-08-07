@@ -1,5 +1,6 @@
 import { forwardRef } from 'react'
-import type { ButtonHTMLAttributes } from 'react'
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes } from 'react'
+import Link from 'next/link'
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'dashed' | 'ghost' | 'link'
 type ButtonSize = 'sm' | 'md'
@@ -22,6 +23,11 @@ const sizeClasses: Record<ButtonSize, string> = {
 // so they opt out of the default padding/size classes entirely.
 const UNSIZED_VARIANTS: ButtonVariant[] = ['link', 'ghost']
 
+function buttonClasses(variant: ButtonVariant, size: ButtonSize, className: string) {
+  const sizing = UNSIZED_VARIANTS.includes(variant) ? '' : sizeClasses[size]
+  return `inline-flex items-center justify-center gap-2 rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizing} ${className}`
+}
+
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant
   size?: ButtonSize
@@ -31,14 +37,25 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   { variant = 'primary', size = 'md', className = '', type = 'button', ...props },
   ref
 ) {
-  const sizing = UNSIZED_VARIANTS.includes(variant) ? '' : sizeClasses[size]
-
   return (
     <button
       ref={ref}
       type={type}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizing} ${className}`}
+      className={buttonClasses(variant, size, className)}
       {...props}
     />
   )
 })
+
+// Link-styled-as-button, for navigation to a real page (e.g. "+ Add stock")
+// rather than an in-place action — keeps the same visual language as Button
+// without duplicating its class logic.
+type LinkButtonProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
+  href: string
+  variant?: ButtonVariant
+  size?: ButtonSize
+}
+
+export function LinkButton({ href, variant = 'primary', size = 'md', className = '', ...props }: LinkButtonProps) {
+  return <Link href={href} className={buttonClasses(variant, size, className)} {...props} />
+}

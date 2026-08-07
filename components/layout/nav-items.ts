@@ -25,6 +25,9 @@ export const navItems: NavItem[] = [
     children: [
       { href: '/categories', label: 'Categories' },
       { href: '/products', label: 'Products' },
+      { href: '/stocks', label: 'Stock' },
+      { href: '/returns', label: 'Return' },
+      { href: '/wastage', label: 'Wastage' },
     ],
   },
   {
